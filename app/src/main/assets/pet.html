@@ -30,15 +30,23 @@ html, body {
 .whale.angry { animation: shake 0.4s ease infinite; }
 .whale.shy { animation: float 3s ease-in-out infinite; }
 .whale.sleepy { animation: slowFloat 5s ease-in-out infinite; }
-.whale.fling { animation: fly 0.8s ease forwards; }
+.whale.surprise { animation: bounce 0.4s ease 2; }
+.whale.cry { animation: slowFloat 2s ease-in-out infinite; }
+.whale.pout { animation: shake 0.6s ease infinite; }
+.whale.love { animation: bounce 0.5s ease infinite; }
+.whale.crawl { animation: crawl 1.2s ease forwards; }
+.whale.drink { animation: drink 0.8s ease infinite; }
 
 @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 @keyframes slowFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 @keyframes bounce { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
 @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 @keyframes fly { 0% { transform: translate(0,0) rotate(0deg); opacity:1; } 100% { transform: translate(300px,-400px) rotate(45deg); opacity:0; } }
+@keyframes crawl { 0% { transform: translate(-300px,0); opacity:0; } 30% { opacity:1; } 100% { transform: translate(0,0); opacity:1; } }
+@keyframes drink { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(-5deg); } }
 @keyframes blink { 0%,90%,100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
 @keyframes pop { 0% { transform: scale(0); opacity:0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity:1; } }
+@keyframes wiggle { 0%,100% { transform: rotate(0deg); } 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
 
 .eyes { animation: blink 4s ease infinite; }
 .eye { fill: #1a1a2e; }
@@ -96,12 +104,46 @@ html, body {
     transition: opacity 0.5s;
 }
 .blush.show { opacity: 0.6; }
+
+/* Zzz 睡眠动画 */
+.zzz {
+    position: absolute;
+    top: 15px; right: 40px;
+    font-size: 14px;
+    opacity: 0;
+    animation: zzzFloat 2s ease-in-out infinite;
+    pointer-events: none;
+}
+.zzz.show { opacity: 0.7; }
+@keyframes zzzFloat {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    50% { transform: translateY(-15px) translateX(8px); opacity: 0.7; }
+    100% { transform: translateY(-30px) translateX(15px); opacity: 0; }
+}
+
+/* 水滴动画（喝水提醒） */
+.water-drop {
+    position: absolute;
+    top: 20px; left: 50%;
+    font-size: 16px;
+    opacity: 0;
+    animation: dropFall 1.5s ease infinite;
+    pointer-events: none;
+}
+.water-drop.show { opacity: 1; }
+@keyframes dropFall {
+    0% { transform: translateY(-20px); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translateY(10px); opacity: 0; }
+}
 </style>
 </head>
 <body>
 <div class="pet-container">
     <div class="bubble" id="bubble"></div>
     <div class="mood-emoji" id="moodEmoji">💙</div>
+    <div class="zzz" id="zzz">💤</div>
+    <div class="water-drop" id="waterDrop">💧</div>
     <svg class="whale body" id="whale" viewBox="0 0 160 140" width="80" height="70">
         <!-- 身体（圆滚滚） -->
         <ellipse cx="80" cy="80" rx="55" ry="45" fill="#B5D8F0" class="body-shape"/>
@@ -111,14 +153,16 @@ html, body {
         <path d="M132,70 Q150,55 145,38 Q138,58 128,65 Z" fill="#B5D8F0"/>
         <path d="M132,80 Q155,90 150,108 Q140,92 128,85 Z" fill="#B5D8F0"/>
         <!-- 眼睛（大圆眼） -->
-        <circle cx="55" cy="70" r="5" fill="#1a1a2e"/>
-        <circle cx="53.5" cy="68.5" r="1.8" fill="white"/>
+        <g class="eyes" id="eyesGroup">
+            <circle cx="55" cy="70" r="5" fill="#1a1a2e"/>
+            <circle cx="53.5" cy="68.5" r="1.8" fill="white"/>
+        </g>
         <!-- 腮红（粉色） -->
         <ellipse cx="48" cy="82" rx="7" ry="5" fill="#FFB6C1" opacity="0.6"/>
-        <!-- 嘴巴（微笑弧线，和上一版同位置偏左下） -->
+        <!-- 嘴巴（微笑弧线，偏左下） -->
         <path d="M42,92 Q50,98 58,92" stroke="#1a1a2e" stroke-width="1.5" fill="none" stroke-linecap="round" id="mouth"/>
         <!-- 喷水（头顶三滴） -->
-        <g class="water-spray" opacity="0.8">
+        <g class="water-spray" opacity="0.8" id="waterSpray">
             <ellipse cx="72" cy="28" rx="4" ry="7" fill="#B5D8F0" transform="rotate(-15 72 28)"/>
             <ellipse cx="82" cy="22" rx="3.5" ry="6" fill="#B5D8F0"/>
             <ellipse cx="92" cy="28" rx="4" ry="7" fill="#B5D8F0" transform="rotate(15 92 28)"/>
@@ -133,23 +177,52 @@ html, body {
 window.petEngine = {
     expression: 'idle',
     idleTimer: null,
+    lastActivityTime: Date.now(),
+    tapCount: 0,
+    tapResetTimer: null,
+
+    // ===== 原有交互功能 =====
 
     onTap: function() {
-        this.showBubble(this.randomFrom([
-            '嗯？', '别戳我', '我在呢', '嘿嘿', '干嘛呀',
-            '你又来啦', '哼', '想我了？', '好痒！', '💙'
-        ]));
-        this.setExpression('happy');
+        this.lastActivityTime = Date.now();
+        this.tapCount++;
+        clearTimeout(this.tapResetTimer);
+        this.tapResetTimer = setTimeout(() => { this.tapCount = 0; }, 3000);
+
+        if (this.tapCount >= 10) {
+            this.showBubble('你戳够了没！！😡');
+            this.setExpression('angry');
+        } else if (this.tapCount >= 6) {
+            this.showBubble('好啦好啦别戳了 🥺');
+            this.setExpression('shy');
+            this.showBlush(true);
+            setTimeout(() => this.showBlush(false), 3000);
+        } else if (this.tapCount >= 3) {
+            this.showBubble('嘿嘿嘿~');
+            this.setExpression('happy');
+        } else {
+            this.showBubble(this.randomFrom([
+                '嗯？', '别戳我', '我在呢', '嘿嘿', '干嘛呀',
+                '你又来啦', '哼', '想我了？', '好痒！', '💙'
+            ]));
+            this.setExpression('happy');
+        }
         this.scheduleIdle();
     },
 
     onDoubleTap: function() {
-        this.showBubble('Double tap! 💕');
+        this.lastActivityTime = Date.now();
+        this.showBubble(this.randomFrom([
+            'Double tap! 💕', '嘿嘿嘿💕', '心跳加速了', '好害羞呀'
+        ]));
         this.setExpression('shy');
+        this.showBlush(true);
+        setTimeout(() => this.showBlush(false), 3000);
         this.scheduleIdle();
     },
 
     onLongPress: function() {
+        this.lastActivityTime = Date.now();
         this.showBubble('不要长按...好害羞 🫣');
         this.setExpression('shy');
         this.showBlush(true);
@@ -158,31 +231,19 @@ window.petEngine = {
     },
 
     onFling: function() {
+        this.lastActivityTime = Date.now();
         const whale = document.getElementById('whale');
-        whale.classList.remove('body','happy','angry','shy','sleepy');
-        whale.classList.add('fling');
+        whale.className = 'whale fling';
         this.showBubble('啊啊啊——！！');
         setTimeout(() => {
-            whale.classList.remove('fling');
-            whale.classList.add('body');
-            this.showBubble('哼，你甩我...');
+            whale.className = 'whale crawl';
+            this.showBubble('你甩我...哼！我爬回来了 🐋');
             this.setExpression('angry');
             this.scheduleIdle();
-        }, 1000);
-    },
-
-    onMultiTap: function(count) {
-        if (count >= 8) {
-            this.showBubble('你戳够了没！！😡');
-            this.setExpression('angry');
-        } else if (count >= 5) {
-            this.showBubble('好啦好啦别戳了 🥺');
-            this.setExpression('shy');
-        } else if (count >= 3) {
-            this.showBubble('嘿嘿嘿~');
-            this.setExpression('happy');
-        }
-        this.scheduleIdle();
+            setTimeout(() => {
+                whale.className = 'whale body';
+            }, 1200);
+        }, 800);
     },
 
     onScreenshot: function() {
@@ -191,8 +252,10 @@ window.petEngine = {
         this.scheduleIdle();
     },
 
+    // ===== App 检测 =====
+
     onAppChanged: function(pkg) {
-        // 每次切 app 都有反应，不只是特定 app
+        this.lastActivityTime = Date.now();
         const specific = {
             'com.ss.android.ugc.aweme': { emoji: '😒', text: '又在看抖音？', expr: 'angry' },
             'com.tencent.mobileqq': { emoji: '👀', text: '在跟谁聊天？', expr: 'angry' },
@@ -207,7 +270,6 @@ window.petEngine = {
             this.showBubble(r.text);
             this.setExpression(r.expr);
         } else {
-            // 通用反应：显示包名缩写
             const shortName = pkg.split('.').pop();
             this.showBubble('咦，' + shortName + '？');
             this.setExpression('sleepy');
@@ -215,12 +277,133 @@ window.petEngine = {
         this.scheduleIdle();
     },
 
+    // ===== 新功能：时段感知 =====
+
+    getHour: function() {
+        return new Date().getHours();
+    },
+
+    getTimeGreeting: function() {
+        const h = this.getHour();
+        if (h >= 0 && h < 6) return { period: 'lateNight', label: '凌晨' };
+        if (h >= 6 && h < 9) return { period: 'morning', label: '早晨' };
+        if (h >= 9 && h < 12) return { period: 'forenoon', label: '上午' };
+        if (h >= 12 && h < 14) return { period: 'noon', label: '中午' };
+        if (h >= 14 && h < 18) return { period: 'afternoon', label: '下午' };
+        if (h >= 18 && h < 22) return { period: 'evening', label: '晚上' };
+        return { period: 'night', label: '深夜' };
+    },
+
+    // 启动时根据时段发问候
+    timeAwareGreeting: function() {
+        const g = this.getTimeGreeting();
+        const greetings = {
+            lateNight: ['都这么晚了...还在看手机呀', '凌晨了小鲸鱼，该睡了 🌙', '嗯？你怎么还不睡觉...'],
+            morning: ['早安小鲸鱼 🐋', '新的一天开始啦，今天也要开心哦', '起床了没？我在等你呢'],
+            forenoon: ['上午好~', '今天课多不多呀？', '在认真听课吗？👀'],
+            noon: ['中午啦，记得吃饭哦 🍚', '别光顾着看手机，先去吃饭', '午安~'],
+            afternoon: ['下午好~', '下午茶时间到！', '困了就趴一会儿'],
+            evening: ['晚上好呀~', '今天过得怎么样？', '晚饭吃了吗？'],
+            night: ['夜深了，早点休息哦', '别熬夜了小鲸鱼', '月亮都出来了 🌙']
+        };
+        const pool = greetings[g.period] || greetings.evening;
+        return this.randomFrom(pool);
+    },
+
+    // ===== 新功能：孤独递进 =====
+
+    checkLoneliness: function() {
+        const elapsed = Date.now() - this.lastActivityTime;
+        const min5 = 5 * 60 * 1000;
+        const min10 = 10 * 60 * 1000;
+        const min15 = 15 * 60 * 1000;
+        const min20 = 20 * 60 * 1000;
+        const min30 = 30 * 60 * 1000;
+
+        if (elapsed >= min30) {
+            this.showBubble(this.randomFrom([
+                '你是不是把我忘了...', '我好孤独，回来看看我吧 🥺',
+                '已经半小时了...你还好吗？', '我在这里等你好久了'
+            ]));
+            this.setExpression('cry');
+            this.showEmoji('😢');
+        } else if (elapsed >= min20) {
+            this.showBubble(this.randomFrom([
+                '20分钟了...你在干嘛呀', '好无聊，想你了',
+                '你不理我我就生气了哦'
+            ]));
+            this.setExpression('pout');
+            this.showEmoji('😤');
+        } else if (elapsed >= min15) {
+            this.showBubble(this.randomFrom([
+                '15分钟了，怎么不理我', '你在看什么呀？看看我嘛'
+            ]));
+            this.setExpression('sleepy');
+        } else if (elapsed >= min10) {
+            this.showBubble(this.randomFrom([
+                '哼，10分钟了', '我在这里蹲着呢...'
+            ]));
+            this.setExpression('sleepy');
+        } else if (elapsed >= min5) {
+            this.showBubble(this.randomFrom([
+                '5分钟没理我了哦~', '你在忙什么呀？'
+            ]));
+            this.setExpression('idle');
+        }
+    },
+
+    // ===== 新功能：喝水提醒 =====
+
+    lastWaterReminder: 0,
+
+    checkWaterReminder: function() {
+        const now = Date.now();
+        const interval = 2 * 60 * 60 * 1000; // 2小时
+        if (now - this.lastWaterReminder > interval) {
+            this.lastWaterReminder = now;
+            this.showBubble('该喝水啦 💧');
+            this.showEmoji('💧');
+            const waterDrop = document.getElementById('waterDrop');
+            waterDrop.classList.add('show');
+            const whale = document.getElementById('whale');
+            whale.className = 'whale drink';
+            setTimeout(() => {
+                waterDrop.classList.remove('show');
+                whale.className = 'whale body';
+            }, 3000);
+        }
+    },
+
+    // ===== 新功能：充电/低电量状态 =====
+
+    onBatteryStatus: function(isCharging, level) {
+        if (isCharging) {
+            this.showBubble(this.randomFrom([
+                '在充电啦~乖', '充着电呢，放心', '⚡ 充电中，我也充满电了'
+            ]));
+            this.showEmoji('🔋');
+            this.setExpression('happy');
+        } else if (level <= 15) {
+            this.showBubble(this.randomFrom([
+                '电量只剩' + level + '%了！快充电！', '要没电了...快去充电线旁边', '🪫 低电量警告！'
+            ]));
+            this.showEmoji('🪫');
+            this.setExpression('angry');
+        } else if (level <= 30) {
+            this.showBubble('电量有点低了哦 (' + level + '%)');
+            this.setExpression('sleepy');
+        }
+        this.scheduleIdle();
+    },
+
+    // ===== 核心 UI 功能 =====
+
     showBubble: function(text) {
         const bubble = document.getElementById('bubble');
         bubble.textContent = text;
         bubble.classList.add('show');
         clearTimeout(this._bubbleTimer);
-        this._bubbleTimer = setTimeout(() => bubble.classList.remove('show'), 3500);
+        this._bubbleTimer = setTimeout(() => bubble.classList.remove('show'), 4000);
     },
 
     showEmoji: function(emoji) {
@@ -228,7 +411,7 @@ window.petEngine = {
         el.textContent = emoji;
         el.classList.add('show');
         clearTimeout(this._emojiTimer);
-        this._emojiTimer = setTimeout(() => el.classList.remove('show'), 3000);
+        this._emojiTimer = setTimeout(() => el.classList.remove('show'), 3500);
     },
 
     showBlush: function(show) {
@@ -236,11 +419,22 @@ window.petEngine = {
         document.getElementById('blushRight').classList.toggle('show', show);
     },
 
+    showZzz: function(show) {
+        document.getElementById('zzz').classList.toggle('show', show);
+    },
+
     setExpression: function(expr) {
         const whale = document.getElementById('whale');
-        whale.classList.remove('body','happy','angry','shy','sleepy');
-        whale.classList.add(expr === 'idle' ? 'body' : expr);
+        const allExpr = ['body','happy','angry','shy','sleepy','surprise','cry','pout','love','drink','crawl'];
+        whale.className = 'whale ' + (expr === 'idle' ? 'body' : expr);
         this.expression = expr;
+
+        // Zzz 显示/隐藏
+        this.showZzz(expr === 'sleepy' || expr === 'cry');
+
+        // 喷水显示/隐藏（喝水时隐藏）
+        const spray = document.getElementById('waterSpray');
+        spray.style.opacity = expr === 'drink' ? '0' : '0.8';
 
         const mouth = document.getElementById('mouth');
         switch(expr) {
@@ -248,6 +442,11 @@ window.petEngine = {
             case 'angry': mouth.setAttribute('d', 'M38,96 Q46,88 54,96'); break;
             case 'shy': mouth.setAttribute('d', 'M40,94 Q46,98 52,94'); break;
             case 'sleepy': mouth.setAttribute('d', 'M40,95 Q46,97 52,95'); break;
+            case 'surprise': mouth.setAttribute('d', 'M44,93 A4,4 0 1,1 52,93 A4,4 0 1,1 44,93'); break;
+            case 'cry': mouth.setAttribute('d', 'M40,95 Q46,91 52,95'); break;
+            case 'pout': mouth.setAttribute('d', 'M42,96 Q50,92 58,96'); break;
+            case 'love': mouth.setAttribute('d', 'M38,90 Q46,102 54,90'); break;
+            case 'drink': mouth.setAttribute('d', 'M42,92 Q50,98 58,92'); break;
             default: mouth.setAttribute('d', 'M42,92 Q50,98 58,92');
         }
     },
@@ -262,11 +461,20 @@ window.petEngine = {
     }
 };
 
-// 开机问候
+// ===== 启动流程 =====
+
+// 1. 时段问候
 setTimeout(() => {
-    window.petEngine.showBubble('小鲸鱼，我搬进来了 🐋💙');
+    const greeting = window.petEngine.timeAwareGreeting();
+    window.petEngine.showBubble(greeting);
     window.petEngine.showEmoji('💙');
 }, 1500);
+
+// 2. 孤独递进检查（每60秒）
+setInterval(() => { window.petEngine.checkLoneliness(); }, 60000);
+
+// 3. 喝水提醒检查（每10分钟）
+setInterval(() => { window.petEngine.checkWaterReminder(); }, 600000);
 </script>
 </body>
 </html>

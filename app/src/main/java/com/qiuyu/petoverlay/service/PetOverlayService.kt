@@ -18,7 +18,11 @@ import com.qiuyu.petoverlay.utils.PetGestureHandler
 import com.qiuyu.petoverlay.utils.UsageTracker
 import com.qiuyu.petoverlay.utils.ScreenshotObserver
 import com.qiuyu.petoverlay.utils.SupabaseSync
-import android.util.DisplayMetrics
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.BatteryManager
 import kotlin.math.max
 import kotlin.math.min
 
@@ -31,6 +35,7 @@ class PetOverlayService : Service() {
     private var usageTracker: UsageTracker? = null
     private var screenshotObserver: ScreenshotObserver? = null
     private var supabaseSync: SupabaseSync? = null
+    private var batteryReceiver: BroadcastReceiver? = null
 
     companion object {
         private const val CHANNEL_ID = "pet_overlay_channel"
@@ -254,10 +259,44 @@ class PetOverlayService : Service() {
         screenshotObserver = ScreenshotObserver(overlayView)
         screenshotObserver?.start()
 
+        // Battery Monitor: push battery status to pet.html
+        startBatteryMonitor()
+
         // Supabase Sync: optional backend connection
         // To enable, set your Supabase URL and anon key below:
         // supabaseSync = SupabaseSync("https://xxx.supabase.co", "your-anon-key", overlayView)
         // supabaseSync?.startPolling()
+    }
+
+    private fun startBatteryMonitor() {
+        batteryReceiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context?, intent: Intent?) {
+                val level = intent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: return
+                val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
+                val pct = if (scale > 0) (level * 100 / scale) else level
+                val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+                val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                                 status == BatteryManager.BATTERY_STATUS_FULL
+
+                // 启动后延迟 10 秒再推送，避免一开机就触发
+                if (System.currentTimeMillis() - startTime > 10000) {
+                    pushBatteryStatus(isCharging, pct)
+                }
+            }
+        }
+        val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        registerReceiver(batteryReceiver, filter)
+    }
+
+    private val startTime = System.currentTimeMillis()
+
+    private fun pushBatteryStatus(isCharging: Boolean, level: Int) {
+        handler.post {
+            overlayView?.evaluateJavascript(
+                "try { window.petEngine && window.petEngine.onBatteryStatus($isCharging, $level); } catch(e) {}",
+                null
+            )
+        }
     }
 
     private fun dpToPx(dp: Int): Int {
@@ -269,6 +308,7 @@ class PetOverlayService : Service() {
         usageTracker?.stop()
         screenshotObserver?.stop()
         supabaseSync?.stopPolling()
+        batteryReceiver?.let { unregisterReceiver(it) }
         overlayView?.let {
             windowManager?.removeView(it)
             it.destroy()
