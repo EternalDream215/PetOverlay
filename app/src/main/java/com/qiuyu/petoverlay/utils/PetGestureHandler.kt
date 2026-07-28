@@ -9,12 +9,18 @@ import android.view.WindowManager
 import android.webkit.WebView
 import kotlin.math.sqrt
 import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 
 class PetGestureHandler(
     private val context: Context,
     private val params: WindowManager.LayoutParams,
     private val windowManager: WindowManager,
-    private val webView: WebView
+    private val webView: WebView,
+    private val screenW: Int,
+    private val screenH: Int,
+    private val petW: Int,
+    private val petH: Int
 ) {
     private var initialX = 0
     private var initialY = 0
@@ -52,8 +58,8 @@ class PetGestureHandler(
                     val dy = (event.rawY - initialTouchY).toInt()
                     if (abs(dx) > MOVE_THRESHOLD || abs(dy) > MOVE_THRESHOLD) {
                         hasMoved = true
-                        params.x = initialX + dx
-                        params.y = initialY + dy
+                        params.x = clampX(initialX + dx)
+                        params.y = clampY(initialY + dy)
                         windowManager.updateViewLayout(webView, params)
                     }
                     true
@@ -110,6 +116,12 @@ class PetGestureHandler(
     }
 
     private fun onFling(dx: Int, dy: Int) {
+        // When flung, project velocity but clamp within screen
+        val targetX = params.x + dx * 2
+        val targetY = params.y + dy * 2
+        params.x = clampX(targetX)
+        params.y = clampY(targetY)
+        try { windowManager.updateViewLayout(webView, params) } catch (_: Exception) {}
         webView.evaluateJavascript("window._nativeBridge && window._nativeBridge.onFling()", null)
     }
 
@@ -118,4 +130,7 @@ class PetGestureHandler(
             "window.petEngine && window.petEngine.onMultiTap($count)", null
         )
     }
+
+    private fun clampX(x: Int): Int = max(0, min(x, screenW - petW))
+    private fun clampY(y: Int): Int = max(0, min(y, screenH - petH))
 }

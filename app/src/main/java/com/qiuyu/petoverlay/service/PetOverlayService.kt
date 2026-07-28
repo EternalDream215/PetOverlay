@@ -15,6 +15,9 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.qiuyu.petoverlay.MainActivity
 import com.qiuyu.petoverlay.utils.PetGestureHandler
+import android.util.DisplayMetrics
+import kotlin.math.max
+import kotlin.math.min
 
 class PetOverlayService : Service() {
 
@@ -65,18 +68,28 @@ class PetOverlayService : Service() {
     private fun setupOverlay() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
+        val petW = dpToPx(PET_SIZE_DP)
+        val petH = dpToPx(PET_HEIGHT_DP)
+
         params = WindowManager.LayoutParams(
-            dpToPx(PET_SIZE_DP),
-            dpToPx(PET_HEIGHT_DP),
+            petW,
+            petH,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.BOTTOM or Gravity.END
+            gravity = Gravity.TOP or Gravity.START
             x = dpToPx(20)
             y = dpToPx(200)
         }
+
+        // Get screen dimensions for boundary enforcement
+        val wm = getSystemService(WINDOW_SERVICE) as WindowManager
+        val metrics = DisplayMetrics()
+        @Suppress("DEPRECATION")
+        wm.defaultDisplay.getRealMetrics(metrics)
+        val screenW = metrics.widthPixels
+        val screenH = metrics.heightPixels
 
         overlayView = WebView(this).apply {
             setBackgroundColor(0x00000000)
@@ -97,7 +110,7 @@ class PetOverlayService : Service() {
             loadUrl("file:///android_asset/pet.html")
         }
 
-        val gestureHandler = PetGestureHandler(this, params!!, windowManager!!, overlayView!!)
+        val gestureHandler = PetGestureHandler(this, params!!, windowManager!!, overlayView!!, screenW, screenH, petW, petH)
         overlayView?.setOnTouchListener(gestureHandler.createTouchListener())
 
         windowManager?.addView(overlayView, params)
