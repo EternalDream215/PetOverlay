@@ -115,8 +115,8 @@ html, body {
         <circle cx="53.5" cy="68.5" r="1.8" fill="white"/>
         <!-- 腮红（粉色） -->
         <ellipse cx="48" cy="82" rx="7" ry="5" fill="#FFB6C1" opacity="0.6"/>
-        <!-- 嘴巴（微笑弧线） -->
-        <path d="M50,88 Q58,94 66,88" stroke="#1a1a2e" stroke-width="1.5" fill="none" stroke-linecap="round" id="mouth"/>
+        <!-- 嘴巴（微笑弧线，和上一版同位置偏左下） -->
+        <path d="M42,92 Q50,98 58,92" stroke="#1a1a2e" stroke-width="1.5" fill="none" stroke-linecap="round" id="mouth"/>
         <!-- 喷水（头顶三滴） -->
         <g class="water-spray" opacity="0.8">
             <ellipse cx="72" cy="28" rx="4" ry="7" fill="#B5D8F0" transform="rotate(-15 72 28)"/>
@@ -244,11 +244,11 @@ window.petEngine = {
 
         const mouth = document.getElementById('mouth');
         switch(expr) {
-            case 'happy': mouth.setAttribute('d', 'M35,58 Q42,68 50,58'); break;
-            case 'angry': mouth.setAttribute('d', 'M35,62 Q42,56 50,62'); break;
-            case 'shy': mouth.setAttribute('d', 'M38,60 Q42,64 46,60'); break;
-            case 'sleepy': mouth.setAttribute('d', 'M38,61 Q42,63 46,61'); break;
-            default: mouth.setAttribute('d', 'M35,60 Q42,66 50,60');
+            case 'happy': mouth.setAttribute('d', 'M38,90 Q46,100 54,90'); break;
+            case 'angry': mouth.setAttribute('d', 'M38,96 Q46,88 54,96'); break;
+            case 'shy': mouth.setAttribute('d', 'M40,94 Q46,98 52,94'); break;
+            case 'sleepy': mouth.setAttribute('d', 'M40,95 Q46,97 52,95'); break;
+            default: mouth.setAttribute('d', 'M42,92 Q50,98 58,92');
         }
     },
 
