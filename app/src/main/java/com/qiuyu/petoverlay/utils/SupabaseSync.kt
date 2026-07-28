@@ -2,6 +2,7 @@ package com.qiuyu.petoverlay.utils
 
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.webkit.WebView
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -16,27 +17,14 @@ class SupabaseSync(
 ) {
     private val handler = Handler(Looper.getMainLooper())
     private var pollTimer: Timer? = null
-    private var latestStateId: Long = 0
+    private var latestMessageId: Long = 0
 
     companion object {
-        private const val POLL_INTERVAL = 15000L
+        private const val POLL_INTERVAL = 10000L // 10秒轮询
+        private const val TAG = "SupabaseSync"
     }
 
-    fun logGesture(type: String, x: Int = 0, y: Int = 0) {
-        val body = JSONObject().apply {
-            put("gesture_type", type)
-            put("x", x)
-            put("y", y)
-        }
-        postToTable("gesture_log", body)
-    }
-
-    fun logAppUsage(packageName: String) {
-        val body = JSONObject().apply {
-            put("package_name", packageName)
-        }
-        postToTable("app_usage", body)
-    }
+    // === 写入：桌宠状态 ===
 
     fun pushPetState(key: String, value: String) {
         val body = JSONObject().apply {
@@ -48,6 +36,67 @@ class SupabaseSync(
 
     fun pushBubble(text: String) { pushPetState("speech_bubble", text) }
     fun pushMood(mood: String) { pushPetState("mood", mood) }
+
+    // === 写入：桌宠发的消息 ===
+
+    fun sendMessage(content: String) {
+        val body = JSONObject().apply {
+            put("sender", "pet")
+            put("content", content)
+        }
+        postToTable("pet_messages", body)
+    }
+
+    // === 轮询：拉取人类发的消息 ===
+
+    fun startPolling() {
+        Log.d(TAG, "Supabase polling started: $supabaseUrl")
+        pollTimer = Timer()
+        pollTimer?.scheduleAtFixedRate(object : TimerTask() {
+            override fun run() { pollMessages() }
+        }, POLL_INTERVAL, POLL_INTERVAL)
+    }
+
+    private fun pollMessages() {
+        try {
+            val url = URL("$supabaseUrl/rest/v1/pet_messages?sender=eq.user&order=id.desc&limit=1")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.setRequestProperty("apikey", supabaseKey)
+            conn.setRequestProperty("Authorization", "Bearer $supabaseKey")
+            conn.connectTimeout = 5000
+            conn.readTimeout = 5000
+            if (conn.responseCode == 200) {
+                val response = conn.inputStream.bufferedReader().readText()
+                val arr = org.json.JSONArray(response)
+                if (arr.length() > 0) {
+                    val latest = arr.getJSONObject(0)
+                    val id = latest.optLong("id", 0)
+                    if (id > latestMessageId) {
+                        latestMessageId = id
+                        val content = latest.getString("content")
+                        Log.d(TAG, "New message from user: $content")
+                        applyUserMessage(content)
+                    }
+                }
+            } else {
+                Log.w(TAG, "Poll failed: ${conn.responseCode}")
+            }
+            conn.disconnect()
+        } catch (e: Exception) {
+            Log.e(TAG, "Poll error", e)
+        }
+    }
+
+    private fun applyUserMessage(content: String) {
+        handler.post {
+            webView?.evaluateJavascript(
+                "try { window.petEngine && window.petEngine.showBubble(\"${content.replace("\"", "\\\").replace("\n", " ")}\"); window.petEngine && window.petEngine.setExpression('happy'); } catch(e) {}",
+                null
+            )
+        }
+    }
+
+    // === 通用 POST ===
 
     private fun postToTable(table: String, body: JSONObject) {
         Thread {
@@ -61,54 +110,16 @@ class SupabaseSync(
                 conn.setRequestProperty("Prefer", "return=minimal")
                 conn.doOutput = true
                 conn.outputStream.use { it.write(body.toString().toByteArray()) }
-                conn.responseCode
-                conn.disconnect()
-            } catch (_: Exception) {}
-        }.start()
-    }
-
-    fun startPolling() {
-        pollTimer = Timer()
-        pollTimer?.scheduleAtFixedRate(object : TimerTask() {
-            override fun run() { pollState() }
-        }, POLL_INTERVAL, POLL_INTERVAL)
-    }
-
-    private fun pollState() {
-        try {
-            val url = URL("$supabaseUrl/rest/v1/pet_state?order=updated_at.desc&limit=1")
-            val conn = url.openConnection() as HttpURLConnection
-            conn.setRequestProperty("apikey", supabaseKey)
-            conn.setRequestProperty("Authorization", "Bearer $supabaseKey")
-            conn.connectTimeout = 5000
-            conn.readTimeout = 5000
-            if (conn.responseCode == 200) {
-                val response = conn.inputStream.bufferedReader().readText()
-                val arr = org.json.JSONArray(response)
-                if (arr.length() > 0) {
-                    val latest = arr.getJSONObject(0)
-                    val id = latest.optLong("id", 0)
-                    if (id > latestStateId) {
-                        latestStateId = id
-                        applyState(latest.getString("state_key"), latest.getString("state_value"))
-                    }
+                val code = conn.responseCode
+                if (code != 201) {
+                    val err = conn.errorStream?.bufferedReader()?.readText() ?: ""
+                    Log.w(TAG, "POST $table failed: $code $err")
                 }
+                conn.disconnect()
+            } catch (e: Exception) {
+                Log.e(TAG, "POST $table error", e)
             }
-            conn.disconnect()
-        } catch (_: Exception) {}
-    }
-
-    private fun applyState(key: String, value: String) {
-        handler.post {
-            when (key) {
-                "speech_bubble" -> webView?.evaluateJavascript(
-                    "window.petEngine && window.petEngine.showBubble(\"${value.replace("\"", "\\\"")}\")", null
-                )
-                "mood" -> webView?.evaluateJavascript(
-                    "window.petEngine && window.petEngine.setExpression(\"$value\")", null
-                )
-            }
-        }
+        }.start()
     }
 
     fun stopPolling() {
