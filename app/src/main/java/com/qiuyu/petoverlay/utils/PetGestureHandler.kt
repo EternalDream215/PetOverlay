@@ -36,9 +36,10 @@ class PetGestureHandler(
         private const val DOUBLE_TAP_TIMEOUT = 300L
         private const val LONG_PRESS_TIMEOUT = 600L
         private const val MOVE_THRESHOLD = 10
-        private const val FLING_VELOCITY = 200
-        private const val FLING_TIME = 400
+        private const val FLING_VELOCITY = 150
+        private const val FLING_TIME = 600
         private const val MULTI_TAP_TIMEOUT = 1500L
+        private const val CRAWLBACK_DELAY = 1500L
     }
 
     fun createTouchListener(): View.OnTouchListener {
@@ -58,9 +59,9 @@ class PetGestureHandler(
                     val dy = (event.rawY - initialTouchY).toInt()
                     if (abs(dx) > MOVE_THRESHOLD || abs(dy) > MOVE_THRESHOLD) {
                         hasMoved = true
-                        params.x = clampX(initialX + dx)
-                        params.y = clampY(initialY + dy)
-                        windowManager.updateViewLayout(webView, params)
+                        params.x = initialX + dx
+                        params.y = initialY + dy
+                        try { windowManager.updateViewLayout(webView, params) } catch (_: Exception) {}
                     }
                     true
                 }
@@ -93,7 +94,13 @@ class PetGestureHandler(
                     } else {
                         val velocity = sqrt((dx * dx + dy * dy).toDouble())
                         if (velocity > FLING_VELOCITY && elapsed < FLING_TIME) {
+                            // Fling: fly off screen
                             onFling(dx, dy)
+                        } else {
+                            // Just drag: clamp within screen
+                            params.x = clampX(params.x)
+                            params.y = clampY(params.y)
+                            try { windowManager.updateViewLayout(webView, params) } catch (_: Exception) {}
                         }
                     }
                     true
@@ -116,13 +123,30 @@ class PetGestureHandler(
     }
 
     private fun onFling(dx: Int, dy: Int) {
-        // When flung, project velocity but clamp within screen
-        val targetX = params.x + dx * 2
-        val targetY = params.y + dy * 2
-        params.x = clampX(targetX)
-        params.y = clampY(targetY)
+        // Determine which edge the pet flies towards
+        val flyX = dx * 4
+        val flyY = dy * 4
+
+        // Move pet way off screen in the fling direction
+        params.x = flyX
+        params.y = flyY
         try { windowManager.updateViewLayout(webView, params) } catch (_: Exception) {}
+
+        // Tell JS to show the fly animation + "啊啊啊"
         webView.evaluateJavascript("window._nativeBridge && window._nativeBridge.onFling()", null)
+
+        // After delay, crawl back to a random safe position
+        handler.postDelayed({
+            // Random position within screen
+            val margin = 40
+            val randX = (margin until (screenW - petW - margin)).random()
+            val randY = (margin until (screenH - petH - margin)).random()
+            params.x = randX
+            params.y = randY
+            try { windowManager.updateViewLayout(webView, params) } catch (_: Exception) {}
+            // Tell JS to show crawl animation
+            webView.evaluateJavascript("window._nativeBridge && window._nativeBridge.onCrawlBack()", null)
+        }, CRAWLBACK_DELAY)
     }
 
     private fun onMultiTap(count: Int) {

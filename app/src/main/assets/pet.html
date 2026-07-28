@@ -236,15 +236,21 @@ window.petEngine = {
         const whale = document.getElementById('whale');
         whale.className = 'whale fling';
         this.showBubble('啊啊啊——！！');
-        setTimeout(() => {
-            whale.className = 'whale crawl';
-            this.showBubble('你甩我...哼！我爬回来了 🐋');
-            this.setExpression('angry');
-            this.scheduleIdle();
-            setTimeout(() => {
-                whale.className = 'whale body';
-            }, 1200);
-        }, 800);
+        this.setExpression('surprise');
+        this.showEmoji('😱');
+    },
+
+    onCrawlBack: function() {
+        const whale = document.getElementById('whale');
+        whale.className = 'whale body';
+        this.showBubble(this.randomFrom([
+            '你甩我...哼！我爬回来了 🐋',
+            '哼，别想甩掉我',
+            '我回来了！不许再甩我',
+            '你以为甩得掉吗？😤'
+        ]));
+        this.setExpression('angry');
+        this.scheduleIdle();
     },
 
     onScreenshot: function() {

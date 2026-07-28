@@ -135,6 +135,7 @@ class PetOverlayService : Service() {
                     onDoubleTap: function() { window.petEngine && window.petEngine.onDoubleTap(); },
                     onLongPress: function() { window.petEngine && window.petEngine.onLongPress(); },
                     onFling: function() { window.petEngine && window.petEngine.onFling(); },
+                    onCrawlBack: function() { window.petEngine && window.petEngine.onCrawlBack(); },
                     onScreenshot: function() { window.petEngine && window.petEngine.onScreenshot(); },
                     onAppChanged: function(pkg) { window.petEngine && window.petEngine.onAppChanged(pkg); },
                     onBubble: function(text) { window.petEngine && window.petEngine.showBubble(text); }
