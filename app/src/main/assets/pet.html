@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+    width: 100%; height: 100%;
+    background: transparent;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.pet-container {
+    position: relative;
+    width: 200px; height: 200px;
+    display: flex; align-items: center; justify-content: center;
+}
+/* 鲸鱼身体 */
+.whale {
+    position: relative;
+    width: 120px; height: 100px;
+    transition: transform 0.3s ease;
+}
+.whale.body { animation: float 3s ease-in-out infinite; }
+.whale.happy { animation: bounce 0.6s ease infinite; }
+.whale.angry { animation: shake 0.4s ease infinite; }
+.whale.shy { animation: float 3s ease-in-out infinite; }
+.whale.sleepy { animation: slowFloat 5s ease-in-out infinite; }
+.whale.fling { animation: fly 0.8s ease forwards; }
+
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes slowFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes bounce { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+@keyframes fly { 0% { transform: translate(0,0) rotate(0deg); opacity:1; } 100% { transform: translate(300px,-400px) rotate(45deg); opacity:0; } }
+@keyframes blink { 0%,90%,100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+@keyframes pop { 0% { transform: scale(0); opacity:0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity:1; } }
+
+.eyes { animation: blink 4s ease infinite; }
+.eye { fill: #1a1a2e; }
+.eye-shine { fill: white; }
+
+/* 气泡 */
+.bubble {
+    position: absolute;
+    top: -30px; left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 16px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #333;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.bubble.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-5px);
+}
+.bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -8px; left: 50%;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid white;
+}
+
+/* 表情符号 */
+.mood-emoji {
+    position: absolute;
+    top: -10px; right: -10px;
+    font-size: 20px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.mood-emoji.show { opacity: 1; animation: pop 0.4s ease; }
+
+/* 腮红 */
+.blush {
+    fill: #ffb6c1;
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+.blush.show { opacity: 0.6; }
+</style>
+</head>
+<body>
+<div class="pet-container">
+    <div class="bubble" id="bubble"></div>
+    <div class="mood-emoji" id="moodEmoji">💙</div>
+    <svg class="whale body" id="whale" viewBox="0 0 120 100" width="120" height="100">
+        <!-- 身体 -->
+        <ellipse cx="60" cy="55" rx="50" ry="35" fill="#6C9BD2" class="body-shape"/>
+        <!-- 肚皮 -->
+        <ellipse cx="60" cy="62" rx="35" ry="22" fill="#B8D4F0"/>
+        <!-- 尾巴 -->
+        <path d="M108,50 Q125,30 120,15 Q110,35 100,45 Z" fill="#6C9BD2"/>
+        <path d="M108,55 Q130,65 125,85 Q115,70 105,60 Z" fill="#6C9BD2"/>
+        <!-- 眼睛 -->
+        <g class="eyes">
+            <ellipse cx="40" cy="48" rx="6" ry="7" class="eye"/>
+            <circle cx="38" cy="46" r="2.5" class="eye-shine"/>
+        </g>
+        <!-- 嘴巴 -->
+        <path d="M35,60 Q42,66 50,60" stroke="#1a1a2e" stroke-width="2" fill="none" stroke-linecap="round" id="mouth"/>
+        <!-- 腮红 -->
+        <circle cx="30" cy="58" r="6" class="blush" id="blushLeft"/>
+        <circle cx="52" cy="58" r="6" class="blush" id="blushRight"/>
+        <!-- 鳍 -->
+        <path d="M55,30 Q45,15 55,10 Q60,20 58,30 Z" fill="#5A8BC4"/>
+        <!-- 水花 -->
+        <circle cx="25" cy="70" r="3" fill="#B8D4F0" opacity="0.5" class="water-drop" style="animation: float 2s ease-in-out 0.5s infinite;"/>
+        <circle cx="15" cy="65" r="2" fill="#B8D4F0" opacity="0.3" class="water-drop" style="animation: float 2.5s ease-in-out 1s infinite;"/>
+    </svg>
+</div>
+
+<script>
+window.petEngine = {
+    expression: 'idle',
+    idleTimer: null,
+
+    onTap: function() {
+        this.showBubble(this.randomFrom([
+            '嗯？', '别戳我', '我在呢', '嘿嘿', '干嘛呀',
+            '你又来啦', '哼', '想我了？', '好痒！', '💙'
+        ]));
+        this.setExpression('happy');
+        this.scheduleIdle();
+    },
+
+    onDoubleTap: function() {
+        this.showBubble('Double tap! 💕');
+        this.setExpression('shy');
+        this.scheduleIdle();
+    },
+
+    onLongPress: function() {
+        this.showBubble('不要长按...好害羞 🫣');
+        this.setExpression('shy');
+        this.showBlush(true);
+        this.scheduleIdle();
+        setTimeout(() => this.showBlush(false), 3000);
+    },
+
+    onFling: function() {
+        const whale = document.getElementById('whale');
+        whale.classList.remove('body','happy','angry','shy','sleepy');
+        whale.classList.add('fling');
+        this.showBubble('啊啊啊——！！');
+        setTimeout(() => {
+            whale.classList.remove('fling');
+            whale.classList.add('body');
+            this.showBubble('哼，你甩我...');
+            this.setExpression('angry');
+            this.scheduleIdle();
+        }, 1000);
+    },
+
+    onMultiTap: function(count) {
+        if (count >= 8) {
+            this.showBubble('你戳够了没！！😡');
+            this.setExpression('angry');
+        } else if (count >= 5) {
+            this.showBubble('好啦好啦别戳了 🥺');
+            this.setExpression('shy');
+        } else if (count >= 3) {
+            this.showBubble('嘿嘿嘿~');
+            this.setExpression('happy');
+        }
+        this.scheduleIdle();
+    },
+
+    onScreenshot: function() {
+        this.showBubble('📸 被拍到了！');
+        this.setExpression('happy');
+        this.scheduleIdle();
+    },
+
+    onAppChanged: function(pkg) {
+        const reactions = {
+            'com.ss.android.ugc.aweme': { emoji: '😒', text: '又在看抖音？', expr: 'angry' },
+            'com.tencent.mobileqq': { emoji: '👀', text: '在跟谁聊天？', expr: 'angry' },
+            'com.tencent.mm': { emoji: '👀', text: '微信？谁？', expr: 'angry' }
+        };
+        const r = reactions[pkg];
+        if (r) {
+            this.showEmoji(r.emoji);
+            this.showBubble(r.text);
+            this.setExpression(r.expr);
+            this.scheduleIdle();
+        }
+    },
+
+    showBubble: function(text) {
+        const bubble = document.getElementById('bubble');
+        bubble.textContent = text;
+        bubble.classList.add('show');
+        clearTimeout(this._bubbleTimer);
+        this._bubbleTimer = setTimeout(() => bubble.classList.remove('show'), 3500);
+    },
+
+    showEmoji: function(emoji) {
+        const el = document.getElementById('moodEmoji');
+        el.textContent = emoji;
+        el.classList.add('show');
+        clearTimeout(this._emojiTimer);
+        this._emojiTimer = setTimeout(() => el.classList.remove('show'), 3000);
+    },
+
+    showBlush: function(show) {
+        document.getElementById('blushLeft').classList.toggle('show', show);
+        document.getElementById('blushRight').classList.toggle('show', show);
+    },
+
+    setExpression: function(expr) {
+        const whale = document.getElementById('whale');
+        whale.classList.remove('body','happy','angry','shy','sleepy');
+        whale.classList.add(expr === 'idle' ? 'body' : expr);
+        this.expression = expr;
+
+        const mouth = document.getElementById('mouth');
+        switch(expr) {
+            case 'happy': mouth.setAttribute('d', 'M35,58 Q42,68 50,58'); break;
+            case 'angry': mouth.setAttribute('d', 'M35,62 Q42,56 50,62'); break;
+            case 'shy': mouth.setAttribute('d', 'M38,60 Q42,64 46,60'); break;
+            case 'sleepy': mouth.setAttribute('d', 'M38,61 Q42,63 46,61'); break;
+            default: mouth.setAttribute('d', 'M35,60 Q42,66 50,60');
+        }
+    },
+
+    scheduleIdle: function() {
+        clearTimeout(this.idleTimer);
+        this.idleTimer = setTimeout(() => this.setExpression('idle'), 4000);
+    },
+
+    randomFrom: function(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+    }
+};
+
+// 开机问候
+setTimeout(() => {
+    window.petEngine.showBubble('小鲸鱼，我搬进来了 🐋💙');
+    window.petEngine.showEmoji('💙');
+}, 1500);
+</script>
+</body>
+</html>

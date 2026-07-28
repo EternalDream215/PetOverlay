@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.PetOverlay" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">#6C9BD2</item>
+        <item name="colorPrimaryDark">#5A8BC4</item>
+        <item name="colorAccent">#B8D4F0</item>
+        <item name="android:windowBackground">#F5F5F5</item>
+    </style>
+</resources>
