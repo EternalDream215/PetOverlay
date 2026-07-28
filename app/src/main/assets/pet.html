@@ -102,29 +102,30 @@ html, body {
 <div class="pet-container">
     <div class="bubble" id="bubble"></div>
     <div class="mood-emoji" id="moodEmoji">💙</div>
-    <svg class="whale body" id="whale" viewBox="0 0 120 100" width="80" height="65">
-        <!-- 身体 -->
-        <ellipse cx="60" cy="55" rx="50" ry="35" fill="#6C9BD2" class="body-shape"/>
-        <!-- 肚皮 -->
-        <ellipse cx="60" cy="62" rx="35" ry="22" fill="#B8D4F0"/>
+    <svg class="whale body" id="whale" viewBox="0 0 160 140" width="80" height="70">
+        <!-- 身体（圆滚滚） -->
+        <ellipse cx="80" cy="80" rx="55" ry="45" fill="#B5D8F0" class="body-shape"/>
+        <!-- 白色肚子 -->
+        <ellipse cx="80" cy="90" rx="38" ry="28" fill="#EAF4FB"/>
         <!-- 尾巴 -->
-        <path d="M108,50 Q125,30 120,15 Q110,35 100,45 Z" fill="#6C9BD2"/>
-        <path d="M108,55 Q130,65 125,85 Q115,70 105,60 Z" fill="#6C9BD2"/>
-        <!-- 眼睛 -->
-        <g class="eyes">
-            <ellipse cx="40" cy="48" rx="6" ry="7" class="eye"/>
-            <circle cx="38" cy="46" r="2.5" class="eye-shine"/>
+        <path d="M132,70 Q150,55 145,38 Q138,58 128,65 Z" fill="#B5D8F0"/>
+        <path d="M132,80 Q155,90 150,108 Q140,92 128,85 Z" fill="#B5D8F0"/>
+        <!-- 眼睛（大圆眼） -->
+        <circle cx="55" cy="70" r="5" fill="#1a1a2e"/>
+        <circle cx="53.5" cy="68.5" r="1.8" fill="white"/>
+        <!-- 腮红（粉色） -->
+        <ellipse cx="48" cy="82" rx="7" ry="5" fill="#FFB6C1" opacity="0.6"/>
+        <!-- 嘴巴（微笑弧线） -->
+        <path d="M50,88 Q58,94 66,88" stroke="#1a1a2e" stroke-width="1.5" fill="none" stroke-linecap="round" id="mouth"/>
+        <!-- 喷水（头顶三滴） -->
+        <g class="water-spray" opacity="0.8">
+            <ellipse cx="72" cy="28" rx="4" ry="7" fill="#B5D8F0" transform="rotate(-15 72 28)"/>
+            <ellipse cx="82" cy="22" rx="3.5" ry="6" fill="#B5D8F0"/>
+            <ellipse cx="92" cy="28" rx="4" ry="7" fill="#B5D8F0" transform="rotate(15 92 28)"/>
         </g>
-        <!-- 嘴巴 -->
-        <path d="M35,60 Q42,66 50,60" stroke="#1a1a2e" stroke-width="2" fill="none" stroke-linecap="round" id="mouth"/>
         <!-- 腮红 -->
-        <circle cx="30" cy="58" r="6" class="blush" id="blushLeft"/>
-        <circle cx="52" cy="58" r="6" class="blush" id="blushRight"/>
-        <!-- 鳍 -->
-        <path d="M55,30 Q45,15 55,10 Q60,20 58,30 Z" fill="#5A8BC4"/>
-        <!-- 水花 -->
-        <circle cx="25" cy="70" r="3" fill="#B8D4F0" opacity="0.5" class="water-drop" style="animation: float 2s ease-in-out 0.5s infinite;"/>
-        <circle cx="15" cy="65" r="2" fill="#B8D4F0" opacity="0.3" class="water-drop" style="animation: float 2.5s ease-in-out 1s infinite;"/>
+        <circle cx="38" cy="82" r="5" class="blush" id="blushLeft"/>
+        <circle cx="58" cy="82" r="5" class="blush" id="blushRight"/>
     </svg>
 </div>
 
