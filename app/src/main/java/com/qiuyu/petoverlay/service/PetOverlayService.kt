@@ -12,6 +12,7 @@ import android.provider.Settings
 import android.view.*
 import android.webkit.*
 import android.widget.Toast
+import androidx.core.app.NotificationCompat
 import com.qiuyu.petoverlay.MainActivity
 import com.qiuyu.petoverlay.utils.PetGestureHandler
 
