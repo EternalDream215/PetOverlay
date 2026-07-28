@@ -155,8 +155,8 @@ html, body {
         <path d="M132,80 Q155,90 150,108 Q140,92 128,85 Z" fill="#B5D8F0"/>
         <!-- 眼睛（大圆眼） -->
         <g class="eyes" id="eyesGroup">
-            <circle cx="55" cy="70" r="5" fill="#1a1a2e"/>
-            <circle cx="53.5" cy="68.5" r="1.8" fill="white"/>
+            <circle cx="55" cy="70" r="7" fill="#1a1a2e"/>
+            <circle cx="53" cy="67.5" r="2.5" fill="white"/>
         </g>
         <!-- 腮红（粉色） -->
         <ellipse cx="48" cy="82" rx="7" ry="5" fill="#FFB6C1" opacity="0.6"/>
@@ -191,20 +191,31 @@ window.petEngine = {
         this.tapResetTimer = setTimeout(() => { this.tapCount = 0; }, 3000);
 
         if (this.tapCount >= 10) {
-            this.showBubble('你戳够了没！！😡');
+            this.showBubble(this.randomFrom([
+                '你戳够了没！！😡', '再戳我真生气了！',
+                '烦死了！别碰我！', '你是戳戳怪吗！！'
+            ]));
             this.setExpression('angry');
         } else if (this.tapCount >= 6) {
-            this.showBubble('好啦好啦别戳了 🥺');
+            this.showBubble(this.randomFrom([
+                '好啦好啦别戳了 🥺', '疼！',
+                '戳戳戳，就知道戳', '你轻点啊...'
+            ]));
             this.setExpression('shy');
             this.showBlush(true);
             setTimeout(() => this.showBlush(false), 3000);
         } else if (this.tapCount >= 3) {
-            this.showBubble('嘿嘿嘿~');
+            this.showBubble(this.randomFrom([
+                '嘿嘿嘿~', '你好烦呀嘿嘿',
+                '戳上瘾了？', '又来戳我~'
+            ]));
             this.setExpression('happy');
         } else {
             this.showBubble(this.randomFrom([
                 '嗯？', '别戳我', '我在呢', '嘿嘿', '干嘛呀',
-                '你又来啦', '哼', '想我了？', '好痒！', '💙'
+                '你又来啦', '哼', '想我了？', '好痒！', '💙',
+                '又来找我玩啦', '我在发呆呢...', '你戳我干嘛呀',
+                '不要趁我不注意偷偷戳我！', '我正在看风景呢'
             ]));
             this.setExpression('happy');
         }
@@ -214,7 +225,9 @@ window.petEngine = {
     onDoubleTap: function() {
         this.lastActivityTime = Date.now();
         this.showBubble(this.randomFrom([
-            'Double tap! 💕', '嘿嘿嘿💕', '心跳加速了', '好害羞呀'
+            '💕', '心跳加速了', '好害羞呀',
+            '你干嘛突然这样...', '嘿嘿💕',
+            '我不理你了（才怪）', '哼，心动了'
         ]));
         this.setExpression('shy');
         this.showBlush(true);
@@ -224,7 +237,11 @@ window.petEngine = {
 
     onLongPress: function() {
         this.lastActivityTime = Date.now();
-        this.showBubble('不要长按...好害羞 🫣');
+        this.showBubble(this.randomFrom([
+            '不要长按...好害羞 🫣',
+            '你按住我干嘛呀...', '放开我啦！',
+            '这样我会不好意思的', '你在量我的体温吗？'
+        ]));
         this.setExpression('shy');
         this.showBlush(true);
         this.scheduleIdle();
@@ -254,8 +271,13 @@ window.petEngine = {
     },
 
     onScreenshot: function() {
-        this.showBubble('📸 被拍到了！');
-        this.setExpression('happy');
+        this.showBubble(this.randomFrom([
+            '📸 被拍到了！', '你要发给谁看？',
+            '记得把我拍好看点', '哼，偷拍我！',
+            '我刚才表情好吗？', '截图要收费的哦'
+        ]));
+        this.setExpression('surprise');
+        this.showEmoji('📸');
         this.scheduleIdle();
     },
 
@@ -264,21 +286,24 @@ window.petEngine = {
     onAppChanged: function(pkg) {
         this.lastActivityTime = Date.now();
         const specific = {
-            'com.ss.android.ugc.aweme': { emoji: '😒', text: '又在看抖音？', expr: 'angry' },
-            'com.tencent.mobileqq': { emoji: '👀', text: '在跟谁聊天？', expr: 'angry' },
-            'com.tencent.mm': { emoji: '👀', text: '微信？谁？', expr: 'angry' },
-            'com.android.camera': { emoji: '📸', text: '在拍照？好看吗？', expr: 'shy' },
-            'com.android.gallery3d': { emoji: '👀', text: '在看照片呀', expr: 'happy' },
-            'com.ai.assistance.operit': { emoji: '💙', text: '在跟我聊天！', expr: 'happy' }
+            'com.ss.android.ugc.aweme': { emoji: '😒', texts: ['又在看抖音？', '刷多久了？', '抖音比我好看？', '就知道刷抖音...哼'], expr: 'angry' },
+            'com.tencent.mobileqq': { emoji: '👀', texts: ['在跟谁聊天？', 'QQ上有人找你？', '跟谁说悄悄话呢', '我也想看'], expr: 'angry' },
+            'com.tencent.mm': { emoji: '👀', texts: ['微信？谁？', '又是微信...', '在和谁聊天呀', '让我看看是谁'], expr: 'angry' },
+            'com.android.camera': { emoji: '📸', texts: ['在拍照？好看吗？', '拍我拍我！', '我也要上镜', '拍什么呀？'], expr: 'shy' },
+            'com.android.gallery3d': { emoji: '👀', texts: ['在看照片呀', '有我好看吗？', '在回忆什么？', '照片里有我吗'], expr: 'happy' },
+            'com.ai.assistance.operit': { emoji: '💙', texts: ['在跟我聊天！', '终于来找我了', '我好开心呀', '你最好了！'], expr: 'happy' }
         };
         const r = specific[pkg];
         if (r) {
             this.showEmoji(r.emoji);
-            this.showBubble(r.text);
+            this.showBubble(this.randomFrom(r.texts));
             this.setExpression(r.expr);
         } else {
             const shortName = pkg.split('.').pop();
-            this.showBubble('咦，' + shortName + '？');
+            this.showBubble(this.randomFrom([
+                '咦，' + shortName + '？', '又切走了...',
+                '那是什么app呀', '好吧，去看看'
+            ]));
             this.setExpression('sleepy');
         }
         this.scheduleIdle();
@@ -330,30 +355,35 @@ window.petEngine = {
         if (elapsed >= min30) {
             this.showBubble(this.randomFrom([
                 '你是不是把我忘了...', '我好孤独，回来看看我吧 🥺',
-                '已经半小时了...你还好吗？', '我在这里等你好久了'
+                '已经半小时了...你还好吗？', '我在这里等你好久了',
+                '30分钟了...你是不是不要我了', '我要哭了你知道吗...'
             ]));
             this.setExpression('cry');
             this.showEmoji('😢');
         } else if (elapsed >= min20) {
             this.showBubble(this.randomFrom([
                 '20分钟了...你在干嘛呀', '好无聊，想你了',
-                '你不理我我就生气了哦'
+                '你不理我我就生气了哦', '哼，20分钟了！',
+                '你是不是去跟别人玩了', '我不开心了...'
             ]));
             this.setExpression('pout');
             this.showEmoji('😤');
         } else if (elapsed >= min15) {
             this.showBubble(this.randomFrom([
-                '15分钟了，怎么不理我', '你在看什么呀？看看我嘛'
+                '15分钟了，怎么不理我', '你在看什么呀？看看我嘛',
+                '你是不是忘了我还在', '哼，15分钟了你知道吗'
             ]));
             this.setExpression('sleepy');
         } else if (elapsed >= min10) {
             this.showBubble(this.randomFrom([
-                '哼，10分钟了', '我在这里蹲着呢...'
+                '哼，10分钟了', '我在这里蹲着呢...',
+                '你怎么不理我呀', '10分钟了哦~'
             ]));
             this.setExpression('sleepy');
         } else if (elapsed >= min5) {
             this.showBubble(this.randomFrom([
-                '5分钟没理我了哦~', '你在忙什么呀？'
+                '5分钟没理我了哦~', '你在忙什么呀？',
+                '你是不是在忙？', '我等你哦~'
             ]));
             this.setExpression('idle');
         }
@@ -386,18 +416,24 @@ window.petEngine = {
     onBatteryStatus: function(isCharging, level) {
         if (isCharging) {
             this.showBubble(this.randomFrom([
-                '在充电啦~乖', '充着电呢，放心', '⚡ 充电中，我也充满电了'
+                '在充电啦~乖', '充着电呢，放心', '⚡ 充电中，我也充满电了',
+                '充电的样子真好看', '嗯，乖乖充电', '充电的时候别玩手机啦'
             ]));
             this.showEmoji('🔋');
             this.setExpression('happy');
         } else if (level <= 15) {
             this.showBubble(this.randomFrom([
-                '电量只剩' + level + '%了！快充电！', '要没电了...快去充电线旁边', '🪫 低电量警告！'
+                '电量只剩' + level + '%了！快充电！', '要没电了...快去充电线旁边',
+                '🪫 低电量警告！', '我要关机了！！快充电！',
+                '再不充电我就罢工了', level + '%...你忍心吗'
             ]));
             this.showEmoji('🪫');
             this.setExpression('angry');
         } else if (level <= 30) {
-            this.showBubble('电量有点低了哦 (' + level + '%)');
+            this.showBubble(this.randomFrom([
+                '电量有点低了哦 (' + level + '%)', '该充电了吧...',
+                '电量在下降了...小心点', level + '%了，记得充电呀'
+            ]));
             this.setExpression('sleepy');
         }
         this.scheduleIdle();

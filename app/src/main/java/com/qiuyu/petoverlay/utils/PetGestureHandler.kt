@@ -123,9 +123,13 @@ class PetGestureHandler(
     }
 
     private fun onFling(dx: Int, dy: Int) {
-        // Determine which edge the pet flies towards
-        val flyX = dx * 4
-        val flyY = dy * 4
+        // Fly off screen: ensure it goes past screen edges (1260x2750)
+        val magnitude = sqrt((dx * dx + dy * dy).toDouble())
+        val normDx = if (magnitude > 0) dx / magnitude else 0.0
+        val normDy = if (magnitude > 0) dy / magnitude else 0.0
+        val flyDist = max(screenW, screenH) + petW
+        val flyX = (normDx * flyDist).toInt()
+        val flyY = (normDy * flyDist).toInt()
 
         // Move pet way off screen in the fling direction
         params.x = flyX
@@ -155,6 +159,6 @@ class PetGestureHandler(
         )
     }
 
-    private fun clampX(x: Int): Int = max(0, min(x, screenW - petW))
-    private fun clampY(y: Int): Int = max(0, min(y, screenH - petH))
+    private fun clampX(x: Int): Int = max(-petW / 2, min(x, screenW - petW / 2))
+    private fun clampY(y: Int): Int = max(-petH / 2, min(y, screenH - petH / 2))
 }
