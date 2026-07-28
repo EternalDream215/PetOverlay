@@ -104,8 +104,9 @@ class UsageTracker(
 
     private fun onAppChanged(packageName: String) {
         Handler(Looper.getMainLooper()).post {
+            val escaped = packageName.replace("\\", "\\\\").replace("\"", "\\\"")
             webView?.evaluateJavascript(
-                "window._nativeBridge && window._nativeBridge.onAppChanged(\"$packageName\")",
+                "try { window.petEngine && window.petEngine.onAppChanged('$escaped'); } catch(e) { console.log('AppChanged err:', e); }",
                 null
             )
         }
