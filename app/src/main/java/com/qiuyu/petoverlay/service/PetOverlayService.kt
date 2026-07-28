@@ -15,6 +15,9 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.qiuyu.petoverlay.MainActivity
 import com.qiuyu.petoverlay.utils.PetGestureHandler
+import com.qiuyu.petoverlay.utils.UsageTracker
+import com.qiuyu.petoverlay.utils.ScreenshotObserver
+import com.qiuyu.petoverlay.utils.SupabaseSync
 import android.util.DisplayMetrics
 import kotlin.math.max
 import kotlin.math.min
@@ -25,6 +28,9 @@ class PetOverlayService : Service() {
     private var overlayView: WebView? = null
     private var params: WindowManager.LayoutParams? = null
     private val handler = Handler(Looper.getMainLooper())
+    private var usageTracker: UsageTracker? = null
+    private var screenshotObserver: ScreenshotObserver? = null
+    private var supabaseSync: SupabaseSync? = null
 
     companion object {
         private const val CHANNEL_ID = "pet_overlay_channel"
@@ -63,6 +69,7 @@ class PetOverlayService : Service() {
         }
         setupOverlay()
         startWhisperRotation()
+        startTrackers()
     }
 
     private fun setupOverlay() {
@@ -236,12 +243,32 @@ class PetOverlayService : Service() {
         }
     }
 
+    // === APP DETECTION + SCREENSHOT + SUPABASE ===
+
+    private fun startTrackers() {
+        // App Detection: poll foreground app every 3s
+        usageTracker = UsageTracker(this, overlayView)
+        usageTracker?.start()
+
+        // Screenshot Detection: FileObserver on screenshot directories
+        screenshotObserver = ScreenshotObserver(overlayView)
+        screenshotObserver?.start()
+
+        // Supabase Sync: optional backend connection
+        // To enable, set your Supabase URL and anon key below:
+        // supabaseSync = SupabaseSync("https://xxx.supabase.co", "your-anon-key", overlayView)
+        // supabaseSync?.startPolling()
+    }
+
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
     }
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        usageTracker?.stop()
+        screenshotObserver?.stop()
+        supabaseSync?.stopPolling()
         overlayView?.let {
             windowManager?.removeView(it)
             it.destroy()

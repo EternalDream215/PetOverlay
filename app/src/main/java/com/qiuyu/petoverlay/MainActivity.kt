@@ -1,9 +1,11 @@
 package com.qiuyu.petoverlay
 
 import android.content.Intent
+import android.app.AppOpsManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Process
 import android.provider.Settings
 import android.widget.Button
 import android.widget.TextView
@@ -62,7 +64,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateStatus(statusText: TextView) {
-        val hasPermission = Settings.canDrawOverlays(this)
-        statusText.text = if (hasPermission) "权限：已授予 ✓" else "权限：未授予 ✗"
+        val overlayOk = Settings.canDrawOverlays(this)
+        val usageOk = hasUsageStatsPermission()
+        val lines = mutableListOf<String>()
+        lines.add("悬浮窗：${if (overlayOk) "✓" else "✗  点"权限"授权"}")
+        lines.add("使用统计：${if (usageOk) "✓" else "✗  需手动开启"}")
+        lines.add("截图监听：✓")
+        statusText.text = lines.joinToString("\n")
+    }
+
+    private fun hasUsageStatsPermission(): Boolean {
+        val appOps = getSystemService(APP_OPS_SERVICE) as AppOpsManager
+        val mode = appOps.unsafeCheckOpNoThrow(
+            AppOpsManager.OPSTR_GET_USAGE_STATS,
+            Process.myUid(),
+            packageName
+        )
+        return mode == AppOpsManager.MODE_ALLOWED
     }
 }
