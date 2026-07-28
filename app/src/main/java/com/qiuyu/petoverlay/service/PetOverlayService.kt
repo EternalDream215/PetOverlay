@@ -36,6 +36,7 @@ class PetOverlayService : Service() {
         private const val CHANNEL_ID = "pet_overlay_channel"
         private const val NOTIFICATION_ID = 1001
         private const val PET_SIZE_DP = 200
+    private const val PET_WIDTH_DP = 300
         private const val PET_HEIGHT_DP = 200
         private const val WHISPER_INTERVAL = 3600_000L
 
@@ -75,8 +76,8 @@ class PetOverlayService : Service() {
     private fun setupOverlay() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
-        val petW = dpToPx(PET_SIZE_DP)
-        val petH = dpToPx(PET_HEIGHT_DP)
+        val petW = dpToPx(PET_WIDTH_DP)
+    val petH = dpToPx(PET_HEIGHT_DP)
 
         params = WindowManager.LayoutParams(
             petW,

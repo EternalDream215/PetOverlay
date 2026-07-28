@@ -14,14 +14,16 @@ html, body {
 }
 .pet-container {
     position: relative;
-    width: 200px; height: 200px;
-    display: flex; align-items: center; justify-content: center;
+    width: 300px; height: 200px;
+    display: flex; align-items: flex-end; justify-content: flex-start;
+    padding-bottom: 10px; padding-left: 5px;
 }
 /* 鲸鱼身体 */
 .whale {
     position: relative;
-    width: 120px; height: 100px;
+    width: 80px; height: 65px;
     transition: transform 0.3s ease;
+    flex-shrink: 0;
 }
 .whale.body { animation: float 3s ease-in-out infinite; }
 .whale.happy { animation: bounce 0.6s ease infinite; }
@@ -45,30 +47,30 @@ html, body {
 /* 气泡 */
 .bubble {
     position: absolute;
-    top: -30px; left: 50%;
-    transform: translateX(-50%);
+    top: 10px; right: 10px;
     background: white;
-    border: 2px solid #e0e0e0;
-    border-radius: 16px;
-    padding: 6px 14px;
-    font-size: 12px;
+    border: 2px solid #6C9BD2;
+    border-radius: 14px;
+    padding: 8px 16px;
+    font-size: 16px;
+    line-height: 1.4;
     font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
     color: #333;
-    white-space: nowrap;
+    max-width: 180px;
+    word-break: break-all;
     opacity: 0;
     transition: opacity 0.3s ease, transform 0.3s ease;
     pointer-events: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(108,155,210,0.3);
 }
 .bubble.show {
     opacity: 1;
-    transform: translateX(-50%) translateY(-5px);
+    transform: translateY(-3px);
 }
 .bubble::after {
     content: '';
     position: absolute;
-    bottom: -8px; left: 50%;
-    transform: translateX(-50%);
+    bottom: -8px; right: 40px;
     border-left: 6px solid transparent;
     border-right: 6px solid transparent;
     border-top: 8px solid white;
@@ -77,8 +79,8 @@ html, body {
 /* 表情符号 */
 .mood-emoji {
     position: absolute;
-    top: -10px; right: -10px;
-    font-size: 20px;
+    top: 5px; right: 170px;
+    font-size: 24px;
     opacity: 0;
     transition: opacity 0.3s;
 }
@@ -97,7 +99,7 @@ html, body {
 <div class="pet-container">
     <div class="bubble" id="bubble"></div>
     <div class="mood-emoji" id="moodEmoji">💙</div>
-    <svg class="whale body" id="whale" viewBox="0 0 120 100" width="120" height="100">
+    <svg class="whale body" id="whale" viewBox="0 0 120 100" width="80" height="65">
         <!-- 身体 -->
         <ellipse cx="60" cy="55" rx="50" ry="35" fill="#6C9BD2" class="body-shape"/>
         <!-- 肚皮 -->
