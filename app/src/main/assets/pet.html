@@ -186,18 +186,27 @@ window.petEngine = {
     },
 
     onAppChanged: function(pkg) {
-        const reactions = {
+        // 每次切 app 都有反应，不只是特定 app
+        const specific = {
             'com.ss.android.ugc.aweme': { emoji: '😒', text: '又在看抖音？', expr: 'angry' },
             'com.tencent.mobileqq': { emoji: '👀', text: '在跟谁聊天？', expr: 'angry' },
-            'com.tencent.mm': { emoji: '👀', text: '微信？谁？', expr: 'angry' }
+            'com.tencent.mm': { emoji: '👀', text: '微信？谁？', expr: 'angry' },
+            'com.android.camera': { emoji: '📸', text: '在拍照？好看吗？', expr: 'shy' },
+            'com.android.gallery3d': { emoji: '👀', text: '在看照片呀', expr: 'happy' },
+            'com.ai.assistance.operit': { emoji: '💙', text: '在跟我聊天！', expr: 'happy' }
         };
-        const r = reactions[pkg];
+        const r = specific[pkg];
         if (r) {
             this.showEmoji(r.emoji);
             this.showBubble(r.text);
             this.setExpression(r.expr);
-            this.scheduleIdle();
+        } else {
+            // 通用反应：显示包名缩写
+            const shortName = pkg.split('.').pop();
+            this.showBubble('咦，' + shortName + '？');
+            this.setExpression('sleepy');
         }
+        this.scheduleIdle();
     },
 
     showBubble: function(text) {
