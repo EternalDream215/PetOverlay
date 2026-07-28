@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
         val overlayOk = Settings.canDrawOverlays(this)
         val usageOk = hasUsageStatsPermission()
         val lines = mutableListOf<String>()
-        lines.add("悬浮窗：${if (overlayOk) "✓" else "✗  点"权限"授权"}")
+        lines.add("悬浮窗：${if (overlayOk) "✓" else "✗  未授权"}")
         lines.add("使用统计：${if (usageOk) "✓" else "✗  需手动开启"}")
         lines.add("截图监听：✓")
         statusText.text = lines.joinToString("\n")
