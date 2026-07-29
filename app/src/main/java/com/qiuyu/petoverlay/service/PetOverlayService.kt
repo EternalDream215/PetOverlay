@@ -11,6 +11,8 @@ import android.os.Looper
 import android.provider.Settings
 import android.view.*
 import android.webkit.*
+import android.speech.tts.TextToSpeech
+import java.util.Locale
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.qiuyu.petoverlay.MainActivity
@@ -34,6 +36,7 @@ class PetOverlayService : Service() {
     private var usageTracker: UsageTracker? = null
     private var screenshotObserver: ScreenshotObserver? = null
     private var supabaseSync: SupabaseSync? = null
+    private var tts: TextToSpeech? = null
     private var batteryReceiver: BroadcastReceiver? = null
 
     companion object {
@@ -263,10 +266,17 @@ class PetOverlayService : Service() {
         startBatteryMonitor()
 
         // Supabase Sync: backend connection for pet-human chat
+        tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts?.language = Locale.CHINESE
+                Log.d("PetOverlay", "TTS initialized")
+            }
+        }
         supabaseSync = SupabaseSync(
             "https://xaxcfztcaulzfzwpziho.supabase.co",
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhheGNmenRjYXVsemZ6d3B6aWhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNTUyMzIsImV4cCI6MjEwMDgzMTIzMn0.8IFvXNWNxJ6_SPLHbZnaAmbHvV0LUP49sN8Kax4Y8nM",
-            overlayView
+            overlayView,
+            tts
         )
         supabaseSync?.startPolling()
     }
@@ -311,6 +321,8 @@ class PetOverlayService : Service() {
         usageTracker?.stop()
         screenshotObserver?.stop()
         supabaseSync?.stopPolling()
+        tts?.stop()
+        tts?.shutdown()
         batteryReceiver?.let { unregisterReceiver(it) }
         overlayView?.let {
             windowManager?.removeView(it)
