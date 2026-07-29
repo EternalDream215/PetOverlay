@@ -19,6 +19,8 @@ class SupabaseSync(
     private val webView: WebView?,
     private val tts: TextToSpeech?
 ) {
+    private var serviceRef: Any? = null
+    fun setService(svc: Any) { serviceRef = svc }
     private val handler = Handler(Looper.getMainLooper())
     private var pollTimer: Timer? = null
     private var latestMessageId: Long = 0
@@ -85,18 +87,29 @@ class SupabaseSync(
         }
     }
 
+    private var serviceRef: Any? = null
+
+    fun setService(svc: Any) { serviceRef = svc }
+
     private fun applyUserMessage(content: String) {
-        handler.post {
-            try {
-                val escaped = content.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "")
-                val js = "window._nativeBridge && window._nativeBridge.onBubble(\"" + escaped + "\")"
-                webView?.evaluateJavascript(js, null)
-                synthesizeAndPlay(content)
-                Log.d(TAG, "Bubble + TTS: $content")
-            } catch (e: Exception) {
-                Log.e(TAG, "applyUserMessage err", e)
+        // Show bubble via PetOverlayService.pushBubble
+        try {
+            if (serviceRef != null) {
+                val method = serviceRef!!.javaClass.getMethod("pushBubble", String::class.java)
+                method.invoke(serviceRef, content)
+                Log.d(TAG, "pushBubble via service: $content")
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Bubble err: ${e.message}", e)
         }
+        // TTS on IO thread
+        Thread {
+            try {
+                synthesizeAndPlay(content)
+            } catch (e: Exception) {
+                Log.e(TAG, "TTS err", e)
+            }
+        }.start()
     }
 
     private fun postToTable(table: String, body: JSONObject) {
