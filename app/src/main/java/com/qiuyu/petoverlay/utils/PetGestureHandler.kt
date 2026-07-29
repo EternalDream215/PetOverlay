@@ -36,8 +36,8 @@ class PetGestureHandler(
         private const val DOUBLE_TAP_TIMEOUT = 300L
         private const val LONG_PRESS_TIMEOUT = 600L
         private const val MOVE_THRESHOLD = 10
-        private const val FLING_VELOCITY = 150
-        private const val FLING_TIME = 600
+        private const val FLING_VELOCITY = 500
+        private const val FLING_TIME = 300
         private const val MULTI_TAP_TIMEOUT = 1500L
         private const val CRAWLBACK_DELAY = 1500L
     }
