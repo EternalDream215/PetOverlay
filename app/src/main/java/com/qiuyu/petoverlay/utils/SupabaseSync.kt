@@ -67,13 +67,8 @@ class SupabaseSync(
     }
     private fun applyUserMessage(content: String) {
         handler.post {
-            val escaped = content
-                .replace("\", "\\")
-                .replace(""", "\"")
-                .replace("
-", " ")
-                .replace("", "")
-            val js = "window._nativeBridge && window._nativeBridge.onBubble("$escaped")"
+            val escaped = content.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", "")
+            val js = "window._nativeBridge && window._nativeBridge.onBubble(\"" + escaped + "\")"
             webView?.evaluateJavascript(js, null)
         }
     }
