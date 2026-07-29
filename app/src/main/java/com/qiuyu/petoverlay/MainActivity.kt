@@ -15,6 +15,10 @@ import com.qiuyu.petoverlay.service.PetOverlayService
 
 class MainActivity : AppCompatActivity() {
     private var isRunning = false
+    private var isVoiceMuted = false
+
+    // No companion object needed — use PetOverlayService.isMuted directly
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -24,9 +28,6 @@ class MainActivity : AppCompatActivity() {
         val soundToggleBtn = findViewById<Button>(R.id.soundToggleBtn)
         updateSoundBtn(soundToggleBtn)
         updateStatus(statusText)
-
-        updateStatus(statusText)
-
         permBtn.setOnClickListener {
             if (!Settings.canDrawOverlays(this)) {
                 val intent = Intent(
@@ -39,12 +40,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
         soundToggleBtn.setOnClickListener {
-            PetOverlayService.isMuted = !PetOverlayService.isMuted
+            isVoiceMuted = !isVoiceMuted
+            PetOverlayService.isMuted = isVoiceMuted
             updateSoundBtn(soundToggleBtn)
-            val state = if (PetOverlayService.isMuted) "已关闭" else "已开启"
+            val state = if (isVoiceMuted) "已关闭" else "已开启"
             Toast.makeText(this, "语音播报$state", Toast.LENGTH_SHORT).show()
         }
-
         toggleBtn.setOnClickListener {
             if (!Settings.canDrawOverlays(this)) {
                 Toast.makeText(this, "请先授予悬浮窗权限", Toast.LENGTH_SHORT).show()
@@ -88,8 +89,9 @@ class MainActivity : AppCompatActivity() {
         )
         return mode == AppOpsManager.MODE_ALLOWED
     }
+
     private fun updateSoundBtn(btn: Button) {
-        if (PetOverlayService.isMuted) {
+        if (isVoiceMuted) {
             btn.text = "🔇 语音：关闭"
             btn.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF9E9E9E.toInt())
         } else {
