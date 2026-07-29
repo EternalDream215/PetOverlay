@@ -89,7 +89,7 @@ class SupabaseSync(
         handler.post {
             try {
                 val escaped = content.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "")
-                val js = "window._nativeBridge && window._nativeBridge.onBubble(\"" + escaped + "\")"
+                val js = "window.petEngine && window.petEngine.showBubble(\"" + escaped + "\")"
                 webView?.evaluateJavascript(js, null)
                 synthesizeAndPlay(content)
                 Log.d(TAG, "Bubble + TTS: $content")
