@@ -218,7 +218,7 @@ class PetOverlayService : Service() {
     fun sendChatMessage(text: String) {
         supabaseSync?.sendMessage(text)
         pushBubble("已发送：$text")
-        Log.d(TAG, "Chat message sent: $text")
+        Log.d("PetOverlay", "Chat message sent: $text")
     }
 
     fun pushExpression(expression: String) {
