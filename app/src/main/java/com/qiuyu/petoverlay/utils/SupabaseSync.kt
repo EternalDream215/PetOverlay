@@ -93,7 +93,7 @@ class SupabaseSync(
     private fun applyUserMessage(content: String) {
         val escaped = content
             .replace("\\", "\\\\")
-            .replace(""", "\\\"")
+            .replace('""', '\\\"')
             .replace("\n", "\\n")
             .replace("\r", "")
             .replace("\t", " ")
