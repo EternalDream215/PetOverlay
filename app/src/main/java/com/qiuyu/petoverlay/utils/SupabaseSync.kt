@@ -87,9 +87,7 @@ class SupabaseSync(
         }
     }
 
-    private var serviceRef: Any? = null
 
-    fun setService(svc: Any) { serviceRef = svc }
 
     private fun applyUserMessage(content: String) {
         // Show bubble via PetOverlayService.pushBubble
