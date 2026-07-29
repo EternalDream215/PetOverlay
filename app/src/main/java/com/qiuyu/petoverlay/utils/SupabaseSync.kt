@@ -12,7 +12,6 @@ import java.net.URL
 import java.util.Locale
 import java.util.Timer
 import java.util.TimerTask
-import android.media.MediaPlayer
 
 class SupabaseSync(
     private val supabaseUrl: String,
@@ -28,11 +27,6 @@ class SupabaseSync(
         private const val POLL_INTERVAL = 5000L
         private const val TAG = "SupabaseSync"
     }
-    private val MOSS_API_KEY = "sk-ef5061fa149916b116de49be0992bed7f7fbe6a7b0d8ae24"
-    private val MOSS_VOICE_ID = "b64395c7-545f-46b7-839d-625f8a10748f"
-    private val MOSS_API_URL = "https://api.mosi.cn/v1/audio/speech"
-
-
 
     fun pushPetState(key: String, value: String) {
         val body = JSONObject().apply {
@@ -61,6 +55,10 @@ class SupabaseSync(
         }, 0, POLL_INTERVAL)
     }
 
+    private val MOSS_API_KEY = "sk-ef5061fa149916b116de49be0992bed7f7fbe6a7b0d8ae24"
+    private val MOSS_VOICE_ID = "b64395c7-545f-46b7-839d-625f8a10748f"
+    private val MOSS_API_URL = "https://api.mosi.cn/v1/audio/speech"
+
     private fun pollMessages() {
         try {
             val url = URL(supabaseUrl + "/rest/v1/pet_messages?sender=eq.user&order=id.desc&limit=5")
@@ -88,25 +86,17 @@ class SupabaseSync(
     }
 
     private fun applyUserMessage(content: String) {
-        // Show bubble on main thread
         handler.post {
             try {
-                val escaped = content.replace("\", "\\\\").replace(""", "\\\"").replace("\n", "\\n").replace("\r", "")
+                val escaped = content.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "")
                 val js = "window._nativeBridge && window._nativeBridge.onBubble(\"" + escaped + "\")"
-                Log.d(TAG, "JS eval: $js")
                 webView?.evaluateJavascript(js, null)
+                synthesizeAndPlay(content)
+                Log.d(TAG, "Bubble + TTS: $content")
             } catch (e: Exception) {
-                Log.e(TAG, "Bubble eval err", e)
+                Log.e(TAG, "applyUserMessage err", e)
             }
         }
-        // TTS on IO thread (both MOSS and fallback Android TTS)
-        Thread {
-            try {
-                synthesizeAndPlay(content)
-            } catch (e: Exception) {
-                Log.e(TAG, "TTS thread err", e)
-            }
-        }.start()
     }
 
     private fun postToTable(table: String, body: JSONObject) {
@@ -139,10 +129,11 @@ class SupabaseSync(
     }
 
     private fun synthesizeAndPlay(text: String) {
-        // Try MOSS TTS first
         try {
+            val apiUrl = URL(MOSS_API_URL)
             val conn = apiUrl.openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
+            conn.setRequestProperty("Authorization", "Bearer $MOSS_API_KEY")
             conn.setRequestProperty("Content-Type", "application/json")
             conn.doOutput = true
             conn.connectTimeout = 15000
@@ -151,6 +142,7 @@ class SupabaseSync(
             val body = JSONObject().apply {
                 put("model", "moss-tts")
                 put("input", text)
+                put("voice_id", MOSS_VOICE_ID)
                 put("response_format", "mp3")
                 put("delivery_method", "url")
             }
@@ -162,7 +154,6 @@ class SupabaseSync(
                 val err = conn.errorStream?.bufferedReader()?.readText() ?: "unknown"
                 Log.e(TAG, "MOSS API error: $err")
                 conn.disconnect()
-                fallbackTts(text)
                 return
             }
 
@@ -172,13 +163,7 @@ class SupabaseSync(
             val audioUrl = respJson.getString("url")
             Log.d(TAG, "Audio URL: $audioUrl")
 
-            val ctx = webView?.context
-            if (ctx == null) {
-                Log.e(TAG, "No context for cache dir")
-                fallbackTts(text)
-                return
-            }
-            val cacheFile = java.io.File(ctx.cacheDir, "tts_" + System.currentTimeMillis() + ".mp3")
+            val cacheFile = java.io.File((webView?.context ?: return).cacheDir, "tts_" + System.currentTimeMillis() + ".mp3")
             val audioConn = java.net.URL(audioUrl).openConnection() as HttpURLConnection
             audioConn.connectTimeout = 15000
             audioConn.readTimeout = 30000
@@ -203,94 +188,7 @@ class SupabaseSync(
 
         } catch (e: Exception) {
             Log.e(TAG, "MOSS TTS error: ${e.message}", e)
-            fallbackTts(text)
         }
     }
 
-    private fun fallbackTts(text: String) {
-        // Fallback to Android system TTS
-        if (tts != null && tts.status == TextToSpeech.SUCCESS) {
-            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "pet_msg")
-            Log.d(TAG, "Fallback Android TTS: $text")
-        } else {
-            Log.e(TAG, "No TTS available")
-        }
-    }
-
-    private fun synthesizeAndPlay(text: String) {
-        try {
-            val conn = apiUrl.openConnection() as java.net.HttpURLConnection
-            conn.requestMethod = "POST"
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.doOutput = true
-            conn.connectTimeout = 15000
-            conn.readTimeout = 30000
-
-            val body = org.json.JSONObject().apply {
-                put("model", "moss-tts")
-                put("input", text)
-                put("response_format", "mp3")
-                put("delivery_method", "url")
-            }
-            conn.outputStream.write(body.toString().toByteArray())
-
-            val respCode = conn.responseCode
-            Log.d(TAG, "MOSS API resp: $respCode")
-            if (respCode != 200) {
-                val err = conn.errorStream?.bufferedReader()?.readText() ?: "unknown"
-                Log.e(TAG, "MOSS API error: $err")
-                conn.disconnect()
-                fallbackTts(text)
-                return
-            }
-
-            val respBody = conn.inputStream.bufferedReader().readText()
-            conn.disconnect()
-            val respJson = org.json.JSONObject(respBody)
-            val audioUrl = respJson.getString("url")
-            Log.d(TAG, "Audio URL: $audioUrl")
-
-            val ctx = webView?.context
-            if (ctx == null) {
-                Log.e(TAG, "No context")
-                fallbackTts(text)
-                return
-            }
-            val cacheFile = java.io.File(ctx.cacheDir, "tts_" + System.currentTimeMillis() + ".mp3")
-            val audioConn = java.net.URL(audioUrl).openConnection() as java.net.HttpURLConnection
-            audioConn.connectTimeout = 15000
-            audioConn.readTimeout = 30000
-            val inp = audioConn.inputStream
-            val out = java.io.FileOutputStream(cacheFile)
-            inp.copyTo(out)
-            out.close()
-            inp.close()
-            audioConn.disconnect()
-            Log.d(TAG, "Downloaded audio: ${cacheFile.length()} bytes")
-
-            val player = android.media.MediaPlayer()
-            player.setDataSource(cacheFile.absolutePath)
-            player.prepare()
-            player.setOnCompletionListener {
-                it.release()
-                cacheFile.delete()
-                Log.d(TAG, "Playback complete")
-            }
-            player.start()
-            Log.d(TAG, "Playing MOSS TTS audio")
-
-        } catch (e: Exception) {
-            Log.e(TAG, "MOSS TTS error: ${e.message}", e)
-            fallbackTts(text)
-        }
-    }
-
-    private fun fallbackTts(text: String) {
-        if (tts != null) {
-            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "pet_msg")
-            Log.d(TAG, "Fallback Android TTS: $text")
-        } else {
-            Log.e(TAG, "No TTS available")
-        }
-    }
 }
