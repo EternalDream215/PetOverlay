@@ -16,12 +16,7 @@ jobs:
           distribution: temurin
           java-version: 17
       - name: Build
-        run: |
-          ls -la gradle/wrapper/
-          java -version
-          printf '#!/bin/bash\nset -ex\ncd "$1"\njava -jar gradle/wrapper/gradle-wrapper.jar assembleDebug --no-daemon --stacktrace\n' > /tmp/b.sh
-          chmod +x /tmp/b.sh
-          bash /tmp/b.sh "$GITHUB_WORKSPACE"
+        run: java -classpath gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain assembleDebug --no-daemon --stacktrace
       - name: Find APK
         run: |
           echo "=== APK ==="
