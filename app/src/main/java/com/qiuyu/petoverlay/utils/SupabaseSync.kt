@@ -33,9 +33,6 @@ class SupabaseSync(
     private val MOSS_API_URL = "https://api.mosi.cn/v1/audio/speech"
 
 
-    private val MOSS_API_KEY = "sk-ef5061fa149916b116de49be0992bed7f7fbe6a7b0d8ae24"
-    private val MOSS_VOICE_ID = "b64395c7-545f-46b7-839d-625f8a10748f"
-    private val MOSS_API_URL = "https://api.mosi.cn/v1/audio/speech"
 
     fun pushPetState(key: String, value: String) {
         val body = JSONObject().apply {
@@ -144,10 +141,8 @@ class SupabaseSync(
     private fun synthesizeAndPlay(text: String) {
         // Try MOSS TTS first
         try {
-            val apiUrl = URL(MOSS_API_URL)
             val conn = apiUrl.openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
-            conn.setRequestProperty("Authorization", "Bearer $MOSS_API_KEY")
             conn.setRequestProperty("Content-Type", "application/json")
             conn.doOutput = true
             conn.connectTimeout = 15000
@@ -156,7 +151,6 @@ class SupabaseSync(
             val body = JSONObject().apply {
                 put("model", "moss-tts")
                 put("input", text)
-                put("voice_id", MOSS_VOICE_ID)
                 put("response_format", "mp3")
                 put("delivery_method", "url")
             }
@@ -225,10 +219,8 @@ class SupabaseSync(
 
     private fun synthesizeAndPlay(text: String) {
         try {
-            val apiUrl = java.net.URL(MOSS_API_URL)
             val conn = apiUrl.openConnection() as java.net.HttpURLConnection
             conn.requestMethod = "POST"
-            conn.setRequestProperty("Authorization", "Bearer $MOSS_API_KEY")
             conn.setRequestProperty("Content-Type", "application/json")
             conn.doOutput = true
             conn.connectTimeout = 15000
@@ -237,7 +229,6 @@ class SupabaseSync(
             val body = org.json.JSONObject().apply {
                 put("model", "moss-tts")
                 put("input", text)
-                put("voice_id", MOSS_VOICE_ID)
                 put("response_format", "mp3")
                 put("delivery_method", "url")
             }
