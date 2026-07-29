@@ -14,16 +14,16 @@ import androidx.appcompat.app.AppCompatActivity
 import com.qiuyu.petoverlay.service.PetOverlayService
 
 class MainActivity : AppCompatActivity() {
-
     private var isRunning = false
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         val statusText = findViewById<TextView>(R.id.statusText)
         val toggleBtn = findViewById<Button>(R.id.toggleBtn)
         val permBtn = findViewById<Button>(R.id.permBtn)
+        val soundToggleBtn = findViewById<Button>(R.id.soundToggleBtn)
+        updateSoundBtn(soundToggleBtn)
+        updateStatus(statusText)
 
         updateStatus(statusText)
 
@@ -37,6 +37,12 @@ class MainActivity : AppCompatActivity() {
             } else {
                 Toast.makeText(this, "悬浮窗权限已授予 ✓", Toast.LENGTH_SHORT).show()
             }
+        }
+        soundToggleBtn.setOnClickListener {
+            PetOverlayService.isMuted = !PetOverlayService.isMuted
+            updateSoundBtn(soundToggleBtn)
+            val state = if (PetOverlayService.isMuted) "已关闭" else "已开启"
+            Toast.makeText(this, "语音播报$state", Toast.LENGTH_SHORT).show()
         }
 
         toggleBtn.setOnClickListener {
@@ -81,5 +87,14 @@ class MainActivity : AppCompatActivity() {
             packageName
         )
         return mode == AppOpsManager.MODE_ALLOWED
+    }
+    private fun updateSoundBtn(btn: Button) {
+        if (PetOverlayService.isMuted) {
+            btn.text = "🔇 语音：关闭"
+            btn.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF9E9E9E.toInt())
+        } else {
+            btn.text = "🔊 语音：开启"
+            btn.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFFF9800.toInt())
+        }
     }
 }

@@ -45,6 +45,7 @@ class PetOverlayService : Service() {
         private const val PET_SIZE_DP = 200
         private const val PET_HEIGHT_DP = 200
         private const val WHISPER_INTERVAL = 3600_000L
+        var isMuted = false
 
         fun start(context: Context) {
             val intent = Intent(context, PetOverlayService::class.java)
@@ -171,15 +172,7 @@ class PetOverlayService : Service() {
                         showChatInputDialog()
                     }
                 }
-                // Check if bubble needs to be spoken
-                overlayView?.evaluateJavascript(
-                    "if (window._bubbleSpeakReady) { var t = window._bubbleTextToSpeak; window._bubbleSpeakReady = false; t; } else { ''; }"
-                ) { speakText ->
-                    val text = speakText?.removeSurrounding("\"") ?: ""
-                    if (text.isNotEmpty() && text != "null" && text != "") {
-                        supabaseSync?.synthesizeAndPlay(text)
-                    }
-                }
+                // bubble speak removed - pushBubble already handles TTS directly
                 handler.postDelayed(this, 300)
             }
         }, 300)
@@ -192,8 +185,10 @@ class PetOverlayService : Service() {
                 null
             )
         }
-        // Also speak the bubble text via MOSS TTS
-        supabaseSync?.synthesizeAndPlay(text)
+        // Also speak the bubble text via MOSS TTS (unless muted)
+        if (!isMuted) {
+            supabaseSync?.synthesizeAndPlay(text)
+        }
     }
     fun showChatInputDialog() {
         handler.post {
