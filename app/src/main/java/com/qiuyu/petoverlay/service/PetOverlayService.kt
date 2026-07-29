@@ -186,13 +186,15 @@ class PetOverlayService : Service() {
     fun showChatInputDialog() {
         handler.post {
             try {
-                val ctx = baseContext ?: return@post
+                val ctx = applicationContext ?: return@post
                 val input = EditText(ctx).apply {
                     hint = "想说什么..."
                     setPadding(60, 40, 60, 40)
                     setSelectAllOnFocus(true)
+                    isFocusable = true
+                    isFocusableInTouchMode = true
                 }
-                AlertDialog.Builder(ctx, android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+                val dialog = AlertDialog.Builder(ctx, android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
                     .setTitle("跟小黑猫聊天")
                     .setView(input)
                     .setPositiveButton("发送") { _, _ ->
@@ -202,13 +204,15 @@ class PetOverlayService : Service() {
                         }
                     }
                     .setNegativeButton("取消", null)
-                    .show()
+                    .create()
+                dialog.window?.setType(android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
+                dialog.show()
                 // Force keyboard open
                 input.requestFocus()
-                val imm = ctx.getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                val imm = ctx.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
                 handler.postDelayed({
-                    imm.showSoftInput(input, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
-                }, 200)
+                    imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)
+                }, 300)
             } catch (e: Exception) {
                 Log.e("PetOverlay", "Chat dialog error: ${e.message}")
             }
