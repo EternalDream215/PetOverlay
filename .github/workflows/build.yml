@@ -15,14 +15,23 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      - name: Debug gradlew
+        run: |
+          echo "=== gradlew file content (first 5 lines) ==="
+          head -5 gradlew
+          echo "=== Test gradlew help ==="
+          chmod +x gradlew
+          ./gradlew help 2>&1 | tail -5
+          echo "=== Test gradlew tasks ==="
+          ./gradlew tasks 2>&1 | grep -i "assemble" || echo "no assemble found"
       - name: Build debug APK
-        run: java -jar gradle/wrapper/gradle-wrapper.jar assembleDebug --no-daemon --stacktrace 2>&1
+        run: ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tail -50
       - name: Find APK
         run: |
-          echo "=== All files in build/outputs ==="
-          find . -path "*/build/outputs/*" -type f -exec ls -la {} \; 2>/dev/null || echo "none"
-          echo "=== All APK files ==="
-          find . -name "*.apk" -type f -exec ls -la {} \; 2>/dev/null || echo "none"
+          echo "=== APK search ==="
+          find . -name "*.apk" -type f -exec ls -la {} \;
+          echo "=== build/outputs ==="
+          find . -path "*/build/outputs/*" -type f 2>/dev/null || echo "no outputs"
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
