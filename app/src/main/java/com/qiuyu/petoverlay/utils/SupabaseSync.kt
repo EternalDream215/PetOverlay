@@ -51,10 +51,10 @@ class SupabaseSync(
 
     private fun pollMessages() {
         try {
-            val url = URL("$supabaseUrl/rest/v1/pet_messages?sender=eq.user&order=created_at.desc&limit=5")
+            val url = URL(supabaseUrl + "/rest/v1/pet_messages?sender=eq.user&order=created_at.desc&limit=5")
             val conn = url.openConnection() as HttpURLConnection
             conn.setRequestProperty("apikey", supabaseKey)
-            conn.setRequestProperty("Authorization", "Bearer $supabaseKey")
+            conn.setRequestProperty("Authorization", "Bearer " + supabaseKey)
             val response = conn.inputStream.bufferedReader().readText()
             val arr = org.json.JSONArray(response)
             if (arr.length() > 0) {
@@ -74,25 +74,23 @@ class SupabaseSync(
 
     private fun applyUserMessage(content: String) {
         handler.post {
-            val cleaned = content.replace("\".toRegex(), "")
-                .replace("\n".toRegex(), " ")
-                .replace("\r".toRegex(), "")
-            webView?.evaluateJavascript(
-                "window._nativeBridge && window._nativeBridge.onBubble("$cleaned")",
-                null
-            )
+            val cleaned = content.replace("\", "").replace("\n", " ").replace("\r", "")
+            val prefix = "window._nativeBridge && window._nativeBridge.onBubble(\""
+            val suffix = "\")"
+            val js = prefix + cleaned + suffix
+            webView?.evaluateJavascript(js, null)
         }
     }
 
     private fun postToTable(table: String, body: JSONObject) {
         Thread {
             try {
-                val url = URL("$supabaseUrl/rest/v1/$table")
+                val url = URL(supabaseUrl + "/rest/v1/" + table)
                 val conn = url.openConnection() as HttpURLConnection
                 conn.requestMethod = "POST"
                 conn.setRequestProperty("Content-Type", "application/json")
                 conn.setRequestProperty("apikey", supabaseKey)
-                conn.setRequestProperty("Authorization", "Bearer $supabaseKey")
+                conn.setRequestProperty("Authorization", "Bearer " + supabaseKey)
                 conn.setRequestProperty("Prefer", "return=minimal")
                 conn.doOutput = true
                 conn.outputStream.use { it.write(body.toString().toByteArray()) }
