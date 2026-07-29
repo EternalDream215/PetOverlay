@@ -202,7 +202,7 @@ window.petEngine = {
     },
     onLongPress: function() {
         this.lastActivityTime = Date.now();
-        this.showBubble(this.randomFrom(['不要长按...好害羞 🫣','你按住我干嘛呀...','放开我啦！','这样我会不好意思的','你在量我的体温吗？']));
+        this.showBubble(this.randomFrom(['想跟我说什么？','按住我干嘛，要聊天吗？'])); setTimeout(() => this.showChatInput(), 500);
         this.setExpression('shy');
         this.showBlush(true);
         this.scheduleIdle();
@@ -321,12 +321,41 @@ window.petEngine = {
         }
     },
     scheduleIdle: function() { clearTimeout(this.idleTimer); this.idleTimer = setTimeout(() => this.setExpression('idle'), 4000); },
-    randomFrom: function(a) { return a[Math.floor(Math.random()*a.length)]; }
+    randomFrom: function(a) { return a[Math.floor(Math.random()*a.length)]; },
+
+    // === 聊天输入：长按弹出输入框 ===
+    showChatInput: function() {
+        if (document.getElementById('chatOverlay')) return;
+        this.showBubble('想说什么？');
+        const overlay = document.createElement('div');
+        overlay.id = 'chatOverlay';
+        overlay.style.cssText = 'position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;gap:6px;align-items:center;';
+        overlay.innerHTML = '<input id="chatInput" type="text" placeholder="跟我说点什么..." style="width:160px;padding:8px 12px;border-radius:16px;border:2px solid #6c5ce7;background:rgba(255,255,255,0.95);font-size:13px;outline:none;color:#333;box-shadow:0 2px 8px rgba(0,0,0,0.15);" /><button id="chatSend" style="padding:8px 14px;border-radius:16px;border:none;background:#6c5ce7;color:white;font-size:13px;cursor:pointer;box-shadow:0 2px 6px rgba(108,92,231,0.4);">发送</button>';
+        document.body.appendChild(overlay);
+        const input = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('chatSend');
+        input.focus();
+        const sendMsg = () => {
+            const text = input.value.trim();
+            if (!text) return;
+            // 通过 nativeBridge 发送到 Kotlin → Supabase
+            if (window._nativeBridge && window._nativeBridge.onChatMessage) {
+                window._nativeBridge.onChatMessage(text);
+            }
+            this.showBubble('已发送：' + text);
+            overlay.remove();
+        };
+        sendBtn.addEventListener('click', sendMsg);
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMsg(); });
+        // 点击遮罩关闭
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    }
 };
 // 启动
 setTimeout(() => { window.petEngine.showBubble(window.petEngine.timeAwareGreeting()); }, 1500);
 setInterval(() => { window.petEngine.checkLoneliness(); }, 60000);
-setInterval(() => { window.petEngine.checkWaterReminder(); }, 600000);// Supabase通讯由Kotlin端处理
+setInterval(() => { window.petEngine.checkWaterReminder(); }, 600000);
+// Supabase通讯由Kotlin端处理
 // JS通过_nativeBridge接收
 
 </script>
