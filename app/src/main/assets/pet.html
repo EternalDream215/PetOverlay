@@ -49,7 +49,8 @@ html, body {
 .bubble {
     position: absolute;
     top: 20px; left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateY(-100%);
+    transform-origin: bottom center;
     background: white;
     border: 1.5px solid #5a7a3a;
     border-radius: 10px;
@@ -62,11 +63,12 @@ html, body {
     word-break: break-all;
     text-align: center;
     opacity: 0;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.3s ease;
     pointer-events: none;
     box-shadow: 0 1px 6px rgba(90,122,58,0.25);
+    white-space: normal;
 }
-.bubble.show { opacity:1; transform:translateX(-50%) translateY(-3px); }
+.bubble.show { opacity:1; }
 .bubble::after {
     content:''; position:absolute;
     bottom:-6px; left:50%; transform:translateX(-50%);
@@ -298,6 +300,10 @@ window.petEngine = {
         const b = document.getElementById('bubble');
         b.textContent = text; b.classList.add('show');
         clearTimeout(this._bt); this._bt = setTimeout(() => b.classList.remove('show'), 4000);
+        // Notify Kotlin to speak this text via MOSS TTS
+        if (window._nativeBridge && window._nativeBridge.onBubbleSpeak) {
+            window._nativeBridge.onBubbleSpeak(text);
+        }
     },
     showEmoji: function(e) {
         const el = document.getElementById('moodEmoji'); el.textContent=e; el.classList.add('show');
