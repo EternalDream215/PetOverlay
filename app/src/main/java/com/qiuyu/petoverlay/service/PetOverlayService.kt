@@ -291,6 +291,7 @@ class PetOverlayService : Service() {
             overlayView,
             tts
         )
+        supabaseSync?.setService(this)
         supabaseSync?.startPolling()
     }
 
