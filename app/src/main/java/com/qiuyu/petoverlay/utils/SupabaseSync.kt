@@ -20,11 +20,9 @@ class SupabaseSync(
     private var latestMessageId: Long = 0
 
     companion object {
-        private const val POLL_INTERVAL = 10000L // 10秒轮询
+        private const val POLL_INTERVAL = 10000L
         private const val TAG = "SupabaseSync"
     }
-
-    // === 写入：桌宠状态 ===
 
     fun pushPetState(key: String, value: String) {
         val body = JSONObject().apply {
@@ -37,8 +35,6 @@ class SupabaseSync(
     fun pushBubble(text: String) { pushPetState("speech_bubble", text) }
     fun pushMood(mood: String) { pushPetState("mood", mood) }
 
-    // === 写入：桌宠发的消息 ===
-
     fun sendMessage(content: String) {
         val body = JSONObject().apply {
             put("sender", "pet")
@@ -47,39 +43,30 @@ class SupabaseSync(
         postToTable("pet_messages", body)
     }
 
-    // === 轮询：拉取人类发的消息 ===
-
     fun startPolling() {
         Log.d(TAG, "Supabase polling started: $supabaseUrl")
         pollTimer = Timer()
         pollTimer?.scheduleAtFixedRate(object : TimerTask() {
             override fun run() { pollMessages() }
-        }, POLL_INTERVAL, POLL_INTERVAL)
+        }, 0, POLL_INTERVAL)
     }
 
     private fun pollMessages() {
         try {
-            val url = URL("$supabaseUrl/rest/v1/pet_messages?sender=eq.user&order=id.desc&limit=1")
+            val url = URL("$supabaseUrl/rest/v1/pet_messages?sender=eq.user&order=created_at.desc&limit=5")
             val conn = url.openConnection() as HttpURLConnection
             conn.setRequestProperty("apikey", supabaseKey)
             conn.setRequestProperty("Authorization", "Bearer $supabaseKey")
-            conn.connectTimeout = 5000
-            conn.readTimeout = 5000
-            if (conn.responseCode == 200) {
-                val response = conn.inputStream.bufferedReader().readText()
-                val arr = org.json.JSONArray(response)
-                if (arr.length() > 0) {
-                    val latest = arr.getJSONObject(0)
-                    val id = latest.optLong("id", 0)
-                    if (id > latestMessageId) {
-                        latestMessageId = id
-                        val content = latest.getString("content")
-                        Log.d(TAG, "New message from user: $content")
-                        applyUserMessage(content)
-                    }
+            val response = conn.inputStream.bufferedReader().readText()
+            val arr = org.json.JSONArray(response)
+            if (arr.length() > 0) {
+                val msg = arr.getJSONObject(0)
+                val id = msg.getLong("id")
+                if (id > latestMessageId) {
+                    latestMessageId = id
+                    val content = msg.getString("content")
+                    applyUserMessage(content)
                 }
-            } else {
-                Log.w(TAG, "Poll failed: ${conn.responseCode}")
             }
             conn.disconnect()
         } catch (e: Exception) {
@@ -89,14 +76,13 @@ class SupabaseSync(
 
     private fun applyUserMessage(content: String) {
         handler.post {
+            val escaped = content.replace("\"", "\\\\").replace("\n", " ")
             webView?.evaluateJavascript(
-                "try { window.petEngine && window.petEngine.showBubble(\"${content.replace("\"", "\\\").replace("\n", " ")}\"); window.petEngine && window.petEngine.setExpression('happy'); } catch(e) {}",
+                "try { window.petEngine && window.petEngine.showBubble(\"$escaped\"); window.petEngine && window.petEngine.setExpression('happy'); } catch(e) {}",
                 null
             )
         }
     }
-
-    // === 通用 POST ===
 
     private fun postToTable(table: String, body: JSONObject) {
         Thread {
