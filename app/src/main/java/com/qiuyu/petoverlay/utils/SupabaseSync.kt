@@ -163,7 +163,7 @@ class SupabaseSync(
             val audioUrl = respJson.getString("url")
             Log.d(TAG, "Audio URL: $audioUrl")
 
-            val cacheFile = java.io.File(context.cacheDir, "tts_" + System.currentTimeMillis() + ".mp3")
+            val cacheFile = java.io.File((webView?.context ?: return).cacheDir, "tts_" + System.currentTimeMillis() + ".mp3")
             val audioConn = java.net.URL(audioUrl).openConnection() as HttpURLConnection
             audioConn.connectTimeout = 15000
             audioConn.readTimeout = 30000
@@ -191,67 +191,4 @@ class SupabaseSync(
         }
     }
 
-    private fun synthesizeAndPlay(text: String) {
-        try {
-            val apiUrl = java.net.URL(MOSS_API_URL)
-            val conn = apiUrl.openConnection() as java.net.HttpURLConnection
-            conn.requestMethod = "POST"
-            conn.setRequestProperty("Authorization", "Bearer $MOSS_API_KEY")
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.doOutput = true
-            conn.connectTimeout = 15000
-            conn.readTimeout = 30000
-
-            val body = JSONObject().apply {
-                put("model", "moss-tts")
-                put("input", text)
-                put("voice_id", MOSS_VOICE_ID)
-                put("response_format", "mp3")
-                put("delivery_method", "url")
-            }
-            conn.outputStream.write(body.toString().toByteArray())
-
-            val respCode = conn.responseCode
-            Log.d(TAG, "MOSS API resp: $respCode")
-            if (respCode != 200) {
-                val err = conn.errorStream?.bufferedReader()?.readText() ?: "unknown"
-                Log.e(TAG, "MOSS API error: $err")
-                conn.disconnect()
-                return
-            }
-
-            val respBody = conn.inputStream.bufferedReader().readText()
-            conn.disconnect()
-            val respJson = JSONObject(respBody)
-            val audioUrl = respJson.getString("url")
-            Log.d(TAG, "Audio URL: $audioUrl")
-
-            val ctx = webView?.context ?: return
-            val cacheFile = java.io.File(ctx.cacheDir, "tts_" + System.currentTimeMillis() + ".mp3")
-            val audioConn = java.net.URL(audioUrl).openConnection() as java.net.HttpURLConnection
-            audioConn.connectTimeout = 15000
-            audioConn.readTimeout = 30000
-            val inp = audioConn.inputStream
-            val out = java.io.FileOutputStream(cacheFile)
-            inp.copyTo(out)
-            out.close()
-            inp.close()
-            audioConn.disconnect()
-            Log.d(TAG, "Downloaded audio: ${cacheFile.length()} bytes")
-
-            val player = android.media.MediaPlayer()
-            player.setDataSource(cacheFile.absolutePath)
-            player.prepare()
-            player.setOnCompletionListener {
-                it.release()
-                cacheFile.delete()
-                Log.d(TAG, "Playback complete")
-            }
-            player.start()
-            Log.d(TAG, "Playing MOSS TTS audio")
-
-        } catch (e: Exception) {
-            Log.e(TAG, "MOSS TTS error: ${e.message}", e)
-        }
-    }
 }
