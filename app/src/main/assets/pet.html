@@ -326,44 +326,9 @@ window.petEngine = {
 // 启动
 setTimeout(() => { window.petEngine.showBubble(window.petEngine.timeAwareGreeting()); }, 1500);
 setInterval(() => { window.petEngine.checkLoneliness(); }, 60000);
-setInterval(() => { window.petEngine.checkWaterReminder(); }, 600000);
-// Supabase双向通讯
-const SUPABASE_URL = 'https://xaxcfztcaulzfzwpziho.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhheGNmenRjYXVsemZ6d3B6aWhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNTUyMzIsImV4cCI6MjEwMDgzMTIzMn0.8IFvXNWNxJ6_SPLHbZnaAmbHvV0LUP49sN8Kax4Y8nM';
-let lastMsgId = 0;
-async function pollMessages() {
-    try {
-        const res = await fetch(SUPABASE_URL+'/rest/v1/pet_messages?sender=eq.user&order=id.desc&limit=1&id=gt.'+lastMsgId,
-            {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
-        const data = await res.json();
-        if (data&&data.length>0&&data[0].id>lastMsgId) {
-            lastMsgId = data[0].id;
-            if (window.petEngine) {
-                window.petEngine.showBubble(data[0].content);
-                window.petEngine.setExpression('happy');
-                window.petEngine.lastActivityTime = Date.now();
-            }
-        }
-    } catch(e) {}
-}
-async function sendToSupabase(content, sender) {
-    try {
-        await fetch(SUPABASE_URL+'/rest/v1/pet_messages', {
-            method:'POST',
-            headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-            body: JSON.stringify({sender:sender||'pet',content:content})
-        });
-    } catch(e) {}
-}
-setInterval(pollMessages, 3000);
-(async () => {
-    try {
-        const res = await fetch(SUPABASE_URL+'/rest/v1/pet_messages?select=id&order=id.desc&limit=1',
-            {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
-        const data = await res.json();
-        if (data&&data.length>0) lastMsgId = data[0].id;
-    } catch(e) {}
-})();
+setInterval(() => { window.petEngine.checkWaterReminder(); }, 600000);// Supabase通讯由Kotlin端处理
+// JS通过_nativeBridge接收
+
 </script>
 </body>
 </html>
