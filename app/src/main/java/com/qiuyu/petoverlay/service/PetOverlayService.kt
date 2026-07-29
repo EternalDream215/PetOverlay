@@ -138,10 +138,25 @@ class PetOverlayService : Service() {
                     onCrawlBack: function() { window.petEngine && window.petEngine.onCrawlBack(); },
                     onScreenshot: function() { window.petEngine && window.petEngine.onScreenshot(); },
                     onAppChanged: function(pkg) { window.petEngine && window.petEngine.onAppChanged(pkg); },
-                    onBubble: function(text) { window.petEngine && window.petEngine.showBubble(text); }
+                    onBubble: function(text) { window.petEngine && window.petEngine.showBubble(text); },
+                    onChatMessage: function(text) { window._chatMessageToSend = text; window._chatMessageReady = true; }
                 };
             }
         """.trimIndent(), null)
+        // 定时检查用户通过JS输入框发送的消息
+        handler.postDelayed(object : Runnable {
+            override fun run() {
+                overlayView?.evaluateJavascript(
+                    "if (window._chatMessageReady) { var m = window._chatMessageToSend; window._chatMessageReady = false; m; } else { ''; }"
+                ) { msg ->
+                    val text = msg?.removeSurrounding("\"") ?: ""
+                    if (text.isNotEmpty() && text != "null" && text != "") {
+                        sendChatMessage(text)
+                    }
+                }
+                handler.postDelayed(this, 500)
+            }
+        }, 500)
     }
 
     fun pushBubble(text: String) {
@@ -151,6 +166,12 @@ class PetOverlayService : Service() {
                 null
             )
         }
+    }
+
+    fun sendChatMessage(text: String) {
+        supabaseSync?.sendMessage(text)
+        pushBubble("已发送：$text")
+        Log.d(TAG, "Chat message sent: $text")
     }
 
     fun pushExpression(expression: String) {
