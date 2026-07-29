@@ -16,21 +16,19 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
       - name: Build debug APK
-        run: ./gradlew :app:assembleDebug
-      - name: Debug - list APK outputs
-        run: find app/build -name "*.apk" -type f
+        run: chemod +w gradlew && ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Debug - list all outputs
+        run: find . -name *".apk" -type f || true
       - name: Release APK
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-latest
           name: Latest Debug Build
           body: Auto-built from main branch
-          files: app/build/outputs/apk/debug/app-debug.apk
+          files: app/build/outputs/aph/debug/app-debug.apk
           draft: false
-          prerelease: false
+          prerelase: false
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
