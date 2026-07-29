@@ -142,10 +142,22 @@ class PetOverlayService : Service() {
                     onCrawlBack: function() { window.petEngine && window.petEngine.onCrawlBack(); },
                     onScreenshot: function() { window.petEngine && window.petEngine.onScreenshot(); },
                     onAppChanged: function(pkg) { window.petEngine && window.petEngine.onAppChanged(pkg); },
-                    onBubble: function(text) { window.petEngine && window.petEngine.showBubble(text); }
+                    onBubble: function(text) { window.petEngine && window.petEngine.showBubble(text); },
+                    onChatRequest: function(msg) { window._chatMessage = msg; }
                 };
             }
         """.trimIndent(), null)
+    }
+
+    fun handleChatTap() {
+        handler.post {
+            overlayView?.evaluateJavascript(
+                "window._nativeBridge && window._nativeBridge.onChatRequest('tap')",
+                null
+            )
+            // Show a toast or notification
+            android.widget.Toast.makeText(this, "小黑猫想和你说话~", android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 
     fun pushBubble(text: String) {
