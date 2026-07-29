@@ -45,7 +45,7 @@ class PetOverlayService : Service() {
         private const val PET_SIZE_DP = 200
         private const val PET_HEIGHT_DP = 200
         private const val WHISPER_INTERVAL = 3600_000L
-        var isMuted = false
+        @Volatile var isMuted = false
 
         fun start(context: Context) {
             val intent = Intent(context, PetOverlayService::class.java)
@@ -148,6 +148,15 @@ class PetOverlayService : Service() {
                     onBubbleSpeak: function(text) { window._bubbleTextToSpeak = text; window._bubbleSpeakReady = true; }
                 };
             }
+            // Hook showBubble to also trigger TTS via native bridge
+            if (!window._showBubbleHooked) {
+                window._showBubbleHooked = true;
+                var _origShowBubble = window.petEngine.showBubble.bind(window.petEngine);
+                window.petEngine.showBubble = function(text) {
+                    _origShowBubble(text);
+                    try { window._nativeBridge && window._nativeBridge.onBubbleSpeak(text); } catch(e) {}
+                };
+            }
         """.trimIndent(), null)
     }
 
@@ -172,7 +181,15 @@ class PetOverlayService : Service() {
                         showChatInputDialog()
                     }
                 }
-                // bubble speak removed - pushBubble already handles TTS directly
+                // Check if JS hooked showBubble wants to speak
+                overlayView?.evaluateJavascript(
+                    "if (window._bubbleSpeakReady) { var t = window._bubbleTextToSpeak; window._bubbleSpeakReady = false; t; } else { ''; }"
+                ) { txt ->
+                    val text = txt?.removeSurrounding("\"") ?: ""
+                    if (text.isNotEmpty() && text != "null" && text != "" && !isMuted) {
+                        supabaseSync?.synthesizeAndPlay(text)
+                    }
+                }
                 handler.postDelayed(this, 300)
             }
         }, 300)
