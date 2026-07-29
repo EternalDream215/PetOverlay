@@ -143,7 +143,9 @@ class PetOverlayService : Service() {
                 };
             }
         """.trimIndent(), null)
-        // 定时检查用户通过JS输入框发送的消息
+    }
+
+    private fun startChatPolling() {
         handler.postDelayed(object : Runnable {
             override fun run() {
                 overlayView?.evaluateJavascript(
@@ -291,6 +293,7 @@ class PetOverlayService : Service() {
         )
         supabaseSync?.setService(this)
         supabaseSync?.startPolling()
+        startChatPolling()
     }
 
     private fun startBatteryMonitor() {
