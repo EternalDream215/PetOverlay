@@ -48,7 +48,7 @@ html, body {
 
 .bubble {
     position: absolute;
-    bottom: 70px; left: 50%;
+    bottom: 100px; left: 50%;
     transform: translateX(-50%);
     background: white;
     border: 1.5px solid #5a7a3a;
@@ -74,8 +74,8 @@ html, body {
     border-top:6px solid white;
 .mood-emoji {
     position: absolute;
-    bottom: 90px; right: 15px;
-    font-size: 14px; opacity: 0;
+    bottom: 135px; right: 30px;
+    font-size: 18px; opacity: 0;
     transition: opacity 0.3s;
 }
 .mood-emoji.show { opacity:1; animation:pop 0.4s ease; }
@@ -184,11 +184,8 @@ window.petEngine = {
             this.showBlush(true);
             setTimeout(() => this.showBlush(false), 3000);
         } else if (this.tapCount >= 3) {
-            this.showBubble('想跟我说什么？');
+            this.showBubble(this.randomFrom(['嘿嘿嘿~','你好烦呀嘿嘿','戳上瘾了？','又来戳我~']));
             this.setExpression('happy');
-            if (window._nativeBridge && window._nativeBridge.onTripleTap) {
-                window._nativeBridge.onTripleTap();
-            }
         } else {
             this.showBubble(this.randomFrom(['嗯？','别戳我','我在呢','嘿嘿','干嘛呀','你又来啦','哼','想我了？','好痒！','🖤','又来找我玩啦','我在发呆呢...','你戳我干嘛呀','不要趁我不注意偷偷戳我！']));
             this.setExpression('happy');
@@ -288,7 +285,12 @@ window.petEngine = {
         else if (level<=30) { this.showBubble(this.randomFrom(['电量有点低了哦 ('+level+'%)','该充电了吧...'])); this.setExpression('sleepy'); }
         this.scheduleIdle();
     },
-    onMultiTap: function(count) {},
+    onMultiTap: function(count) {
+        if (count >= 3) {
+            this.showBubble('想跟我说什么？');
+            if (window._nativeBridge) window._nativeBridge.onTripleTap();
+        }
+    },
     showBubble: function(text) {
         const b = document.getElementById('bubble');
         b.textContent = text; b.classList.add('show');
