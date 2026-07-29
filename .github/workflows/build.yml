@@ -16,7 +16,14 @@ jobs:
           distribution: temurin
           java-version: 17
       - run: chmod +x gradlew
-      - run: ./gradlew assembleDebug
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --info 2>&1 | tail -50
+      - name: Find APK
+        run: |
+          echo "=== Finding APK ==="
+          find app/build -name '*.apk' 2>/dev/null || echo 'No APK found'
+          ls -la app/build/outputs/apk/ 2>/dev/null || echo 'No apk dir'
+          ls -la app/build/outputs/ 2>/dev/null || echo 'No outputs dir'
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: build-latest
