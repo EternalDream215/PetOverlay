@@ -149,14 +149,16 @@ class PetOverlayService : Service() {
     private fun startChatPolling() {
         handler.postDelayed(object : Runnable {
             override fun run() {
+                // Check if user sent a chat message from pet
                 overlayView?.evaluateJavascript(
                     "if (window._chatMessageReady) { var m = window._chatMessageToSend; window._chatMessageReady = false; m; } else { ''; }"
                 ) { msg ->
                     val text = msg?.removeSurrounding("\"") ?: ""
-                if (text.isNotEmpty() && text != "null" && text != "") {
-                    sendChatMessage(text)
+                    if (text.isNotEmpty() && text != "null" && text != "") {
+                        sendChatMessage(text)
+                    }
                 }
-                // Also check if chat input was requested via button
+                // Check if chat input button was tapped
                 overlayView?.evaluateJavascript(
                     "if (window._showChatInputFlag) { window._showChatInputFlag = false; true; } else { false; }"
                 ) { flag ->
@@ -164,7 +166,6 @@ class PetOverlayService : Service() {
                     if (shouldShow) {
                         showChatInputDialog()
                     }
-                }
                 }
                 handler.postDelayed(this, 500)
             }
