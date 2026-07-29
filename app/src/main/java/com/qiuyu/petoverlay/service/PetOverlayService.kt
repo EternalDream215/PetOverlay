@@ -182,6 +182,8 @@ class PetOverlayService : Service() {
                 null
             )
         }
+        // Also speak the bubble text via MOSS TTS
+        supabaseSync?.synthesizeAndPlay(text)
     }
     fun showChatInputDialog() {
         handler.post {
