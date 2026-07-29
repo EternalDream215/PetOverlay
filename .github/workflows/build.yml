@@ -16,22 +16,26 @@ jobs:
           distribution: temurin
           java-version: 17
       - name: Build debug APK
-        run: chmod +x gradlew && ./gradlew :app:assembleDebug --no-daemon --stacktrace
-      - name: Debug - list all outputs
-        run: find . -name "*.apk" -type f || true
-      - name: Upload APK Artifact
+        run: |
+          chmod +x gradlew
+          ./gradlew app:assembleDebug --no-daemon --stacktrace
+      - name: Find APK
+        run: |
+          find . -name "*.apk" -type f -exec ls -la {} \; || true
+          find . -path "*/outputs/*" -type f || true
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: pet-overlay-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: "**/*.apk"
           if-no-files-found: warn
-      - name: Release APK
+      - name: Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-latest
           name: Latest Debug Build
           body: Auto-built from main branch
-          files: app/build/outputs/apk/debug/app-debug.apk
+          files: "**/*.apk"
           draft: false
           prerelease: false
           make_latest: true
