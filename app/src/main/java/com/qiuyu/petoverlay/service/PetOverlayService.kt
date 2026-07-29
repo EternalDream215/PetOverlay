@@ -9,8 +9,11 @@ import android.os.IBinder
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.util.Log
 import android.view.*
+import android.view.inputmethod.InputMethodManager
 import android.webkit.*
+import android.widget.EditText
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.qiuyu.petoverlay.MainActivity
@@ -178,6 +181,37 @@ class PetOverlayService : Service() {
                 "window.petEngine && window.petEngine.showBubble(\"${text.replace("\"", "\\\"")}\")",
                 null
             )
+        }
+    }
+    fun showChatInputDialog() {
+        handler.post {
+            try {
+                val ctx = baseContext ?: return@post
+                val input = EditText(ctx).apply {
+                    hint = "想说什么..."
+                    setPadding(60, 40, 60, 40)
+                    setSelectAllOnFocus(true)
+                }
+                AlertDialog.Builder(ctx, android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+                    .setTitle("跟小黑猫聊天")
+                    .setView(input)
+                    .setPositiveButton("发送") { _, _ ->
+                        val text = input.text.toString().trim()
+                        if (text.isNotEmpty()) {
+                            sendChatMessage(text)
+                        }
+                    }
+                    .setNegativeButton("取消", null)
+                    .show()
+                // Force keyboard open
+                input.requestFocus()
+                val imm = ctx.getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                handler.postDelayed({
+                    imm.showSoftInput(input, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+                }, 200)
+            } catch (e: Exception) {
+                Log.e("PetOverlay", "Chat dialog error: ${e.message}")
+            }
         }
     }
 
