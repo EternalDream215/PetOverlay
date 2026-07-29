@@ -89,8 +89,8 @@ class SupabaseSync(
                         latestMessageId = id
                         val content = latest.getString("content")
                         Log.d(TAG, "New message[$sender]: $content")
+                        // pushBubble already calls synthesizeAndPlay, so only show bubble here
                         showBubbleViaService(content)
-                        synthesizeAndPlay(content)
                     }
                 }
             } else {
