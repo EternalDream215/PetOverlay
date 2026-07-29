@@ -134,7 +134,7 @@ class SupabaseSync(
 
     // === MOSS TTS 语音合成 ===
 
-    private fun synthesizeAndPlay(text: String) {
+    fun synthesizeAndPlay(text: String) {
         Thread {
             try {
                 val body = JSONObject().apply {
