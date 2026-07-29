@@ -149,16 +149,21 @@ class PetOverlayService : Service() {
         handler.postDelayed(object : Runnable {
             override fun run() {
                 overlayView?.evaluateJavascript(
-                    "if (window._chatMessageReady) { var m = window._chatMessageToSend; window._chatMessageReady = false; m; } else { ''; }"
+                    "if(window._chatMessageReady){var m=window._chatMessageToSend;window._chatMessageReady=false;m;}"
                 ) { msg ->
                     val text = msg?.removeSurrounding("\"") ?: ""
-                    if (text.isNotEmpty() && text != "null" && text != "") {
+                    if (text.isNotEmpty() && text != "null" && text.length > 2) {
                         sendChatMessage(text)
                     }
                 }
                 handler.postDelayed(this, 500)
             }
-        }, 500)
+        }, 1000)
+    }
+
+    fun sendChatMessage(text: String) {
+        supabaseSync?.sendMessage(text)
+        pushBubble("已发送：$text")
     }
 
     fun pushBubble(text: String) {
@@ -168,12 +173,6 @@ class PetOverlayService : Service() {
                 null
             )
         }
-    }
-
-    fun sendChatMessage(text: String) {
-        supabaseSync?.sendMessage(text)
-        pushBubble("已发送：$text")
-        Log.d(TAG, "Chat message sent: $text")
     }
 
     fun pushExpression(expression: String) {
