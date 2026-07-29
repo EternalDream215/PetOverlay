@@ -28,6 +28,10 @@ class SupabaseSync(
         private const val TAG = "SupabaseSync"
     }
 
+    private val MOSS_API_KEY = "sk-ef5061fa149916b116de49be0992bed7f7fbe6a7b0d8ae24"
+    private val MOSS_VOICE_ID = "b64395c7-545f-46b7-839d-625f8a10748f"
+    private val MOSS_API_URL = "https://api.mosi.cn/v1/audio/speech"
+
     fun pushPetState(key: String, value: String) {
         val body = JSONObject().apply {
             put("state_key", key)
@@ -54,10 +58,6 @@ class SupabaseSync(
             override fun run() { pollMessages() }
         }, 0, POLL_INTERVAL)
     }
-
-    private val MOSS_API_KEY = "sk-ef5061fa149916b116de49be0992bed7f7fbe6a7b0d8ae24"
-    private val MOSS_VOICE_ID = "b64395c7-545f-46b7-839d-625f8a10748f"
-    private val MOSS_API_URL = "https://api.mosi.cn/v1/audio/speech"
 
     private fun pollMessages() {
         try {
@@ -86,17 +86,25 @@ class SupabaseSync(
     }
 
     private fun applyUserMessage(content: String) {
+        // Show bubble on main thread
         handler.post {
             try {
-                val escaped = content.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "")
+                val escaped = content.replace("\", "\\\\").replace(""", "\\\"").replace("\n", "\\n").replace("\r", "")
                 val js = "window._nativeBridge && window._nativeBridge.onBubble(\"" + escaped + "\")"
+                Log.d(TAG, "JS eval: $js")
                 webView?.evaluateJavascript(js, null)
-                synthesizeAndPlay(content)
-                Log.d(TAG, "Bubble + TTS: $content")
             } catch (e: Exception) {
-                Log.e(TAG, "applyUserMessage err", e)
+                Log.e(TAG, "Bubble eval err", e)
             }
         }
+        // TTS on IO thread (both MOSS and fallback Android TTS)
+        Thread {
+            try {
+                synthesizeAndPlay(content)
+            } catch (e: Exception) {
+                Log.e(TAG, "TTS thread err", e)
+            }
+        }.start()
     }
 
     private fun postToTable(table: String, body: JSONObject) {
@@ -129,6 +137,7 @@ class SupabaseSync(
     }
 
     private fun synthesizeAndPlay(text: String) {
+        // Try MOSS TTS first
         try {
             val apiUrl = URL(MOSS_API_URL)
             val conn = apiUrl.openConnection() as HttpURLConnection
@@ -154,6 +163,7 @@ class SupabaseSync(
                 val err = conn.errorStream?.bufferedReader()?.readText() ?: "unknown"
                 Log.e(TAG, "MOSS API error: $err")
                 conn.disconnect()
+                fallbackTts(text)
                 return
             }
 
@@ -163,7 +173,13 @@ class SupabaseSync(
             val audioUrl = respJson.getString("url")
             Log.d(TAG, "Audio URL: $audioUrl")
 
-            val cacheFile = java.io.File((webView?.context ?: return).cacheDir, "tts_" + System.currentTimeMillis() + ".mp3")
+            val ctx = webView?.context
+            if (ctx == null) {
+                Log.e(TAG, "No context for cache dir")
+                fallbackTts(text)
+                return
+            }
+            val cacheFile = java.io.File(ctx.cacheDir, "tts_" + System.currentTimeMillis() + ".mp3")
             val audioConn = java.net.URL(audioUrl).openConnection() as HttpURLConnection
             audioConn.connectTimeout = 15000
             audioConn.readTimeout = 30000
@@ -188,7 +204,17 @@ class SupabaseSync(
 
         } catch (e: Exception) {
             Log.e(TAG, "MOSS TTS error: ${e.message}", e)
+            fallbackTts(text)
         }
     }
 
+    private fun fallbackTts(text: String) {
+        // Fallback to Android system TTS
+        if (tts != null && tts.status == TextToSpeech.SUCCESS) {
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "pet_msg")
+            Log.d(TAG, "Fallback Android TTS: $text")
+        } else {
+            Log.e(TAG, "No TTS available")
+        }
+    }
 }
