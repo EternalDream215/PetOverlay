@@ -269,8 +269,7 @@ class PetOverlayService : Service() {
         supabaseSync = SupabaseSync(
             "https://xaxcfztcaulzfzwpziho.supabase.co",
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhheGNmenRjYXVsemZ6d3B6aWhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNTUyMzIsImV4cCI6MjEwMDgzMTIzMn0.8IFvXNWNxJ6_SPLHbZnaAmbHvV0LUP49sN8Kax4Y8nM",
-            overlayView,
-            tts
+            overlayView
         )
         supabaseSync?.startPolling()
     }
