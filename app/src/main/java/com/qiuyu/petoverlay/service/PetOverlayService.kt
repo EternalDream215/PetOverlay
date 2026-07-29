@@ -39,8 +39,8 @@ class PetOverlayService : Service() {
     companion object {
         private const val CHANNEL_ID = "pet_overlay_channel"
         private const val NOTIFICATION_ID = 1001
-        private const val PET_SIZE_DP = 150
-        private const val PET_HEIGHT_DP = 150
+        private const val PET_SIZE_DP = 200
+        private const val PET_HEIGHT_DP = 200
         private const val WHISPER_INTERVAL = 3600_000L
 
         fun start(context: Context) {
@@ -140,7 +140,7 @@ class PetOverlayService : Service() {
                     onAppChanged: function(pkg) { window.petEngine && window.petEngine.onAppChanged(pkg); },
                     onBubble: function(text) { window.petEngine && window.petEngine.showBubble(text); },
                     onChatMessage: function(text) { window._chatMessageToSend = text; window._chatMessageReady = true; },
-                    onTripleTap: function() { window._tripleTap = true; }
+                    showChatInput: function() { window._showChatInputFlag = true; }
                 };
             }
         """.trimIndent(), null)
@@ -149,59 +149,26 @@ class PetOverlayService : Service() {
     private fun startChatPolling() {
         handler.postDelayed(object : Runnable {
             override fun run() {
-                // 检查三击
                 overlayView?.evaluateJavascript(
-                    "if(window._tripleTap){window._tripleTap=false;true;}"
+                    "if (window._chatMessageReady) { var m = window._chatMessageToSend; window._chatMessageReady = false; m; } else { ''; }"
+                ) { msg ->
+                    val text = msg?.removeSurrounding("\"") ?: ""
+                if (text.isNotEmpty() && text != "null" && text != "") {
+                    sendChatMessage(text)
+                }
+                // Also check if chat input was requested via button
+                overlayView?.evaluateJavascript(
+                    "if (window._showChatInputFlag) { window._showChatInputFlag = false; true; } else { false; }"
                 ) { flag ->
-                    if (flag == "true") {
+                    val shouldShow = flag?.removeSurrounding("\"") == "true"
+                    if (shouldShow) {
                         showChatInputDialog()
                     }
                 }
-                // 检查聊天消息
-                overlayView?.evaluateJavascript(
-                    "if(window._chatMessageReady){var m=window._chatMessageToSend;window._chatMessageReady=false;m;}"
-                ) { msg ->
-                    val text = msg?.removeSurrounding("\"") ?: ""
-                    if (text.isNotEmpty() && text != "null" && text.length > 2) {
-                        sendChatMessage(text)
-                    }
                 }
-                handler.postDelayed(this, 300)
+                handler.postDelayed(this, 500)
             }
-        }, 1000)
-    }
-
-    private fun showChatInputDialog() {
-        val ctx = this ?: return
-        val input = android.widget.EditText(ctx).apply {
-            hint = "跟我说点什么..."
-            setPadding(48, 32, 48, 32)
-            textSize = 16f
-            setSingleLine(true)
-            setTextColor(android.graphics.Color.parseColor("#333333"))
-            setBackgroundColor(android.graphics.Color.WHITE)
-            setHintTextColor(android.graphics.Color.parseColor("#999999"))
-        }
-        val dialog = android.app.AlertDialog.Builder(ctx)
-            .setTitle("跟小黑猫说话")
-            .setView(input)
-            .setPositiveButton("发送") { _, _ ->
-                val text = input.text.toString().trim()
-                if (text.isNotEmpty()) {
-                    sendChatMessage(text)
-                }
-            }
-            .setNegativeButton("取消", null)
-            .create()
-        dialog.show()
-        // 弹出键盘
-        input.requestFocus()
-        dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
-    }
-
-    fun sendChatMessage(text: String) {
-        supabaseSync?.sendMessage(text)
-        pushBubble("已发送：$text")
+        }, 500)
     }
 
     fun pushBubble(text: String) {
@@ -211,6 +178,12 @@ class PetOverlayService : Service() {
                 null
             )
         }
+    }
+
+    fun sendChatMessage(text: String) {
+        supabaseSync?.sendMessage(text)
+        pushBubble("已发送：$text")
+        Log.d(TAG, "Chat message sent: $text")
     }
 
     fun pushExpression(expression: String) {
