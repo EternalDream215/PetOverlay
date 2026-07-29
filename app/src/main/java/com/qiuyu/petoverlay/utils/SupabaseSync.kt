@@ -8,6 +8,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Timer
 import java.util.TimerTask
+
 class SupabaseSync(
     private val supabaseUrl: String,
     private val supabaseKey: String,
@@ -20,6 +21,7 @@ class SupabaseSync(
         private const val POLL_INTERVAL = 5000L
         private const val TAG = "SupabaseSync"
     }
+
     fun pushPetState(key: String, value: String) {
         val body = JSONObject().apply {
             put("state_key", key)
@@ -27,8 +29,10 @@ class SupabaseSync(
         }
         postToTable("pet_state", body)
     }
+
     fun pushBubble(text: String) { pushPetState("speech_bubble", text) }
     fun pushMood(mood: String) { pushPetState("mood", mood) }
+
     fun sendMessage(content: String) {
         val body = JSONObject().apply {
             put("sender", "pet")
@@ -36,6 +40,7 @@ class SupabaseSync(
         }
         postToTable("pet_messages", body)
     }
+
     fun startPolling() {
         Log.d(TAG, "Supabase polling started: $supabaseUrl")
         pollTimer = Timer()
@@ -43,6 +48,7 @@ class SupabaseSync(
             override fun run() { pollMessages() }
         }, 0, POLL_INTERVAL)
     }
+
     private fun pollMessages() {
         try {
             val url = URL("$supabaseUrl/rest/v1/pet_messages?sender=eq.user&order=created_at.desc&limit=5")
@@ -65,13 +71,19 @@ class SupabaseSync(
             Log.e(TAG, "Poll error", e)
         }
     }
+
     private fun applyUserMessage(content: String) {
         handler.post {
-            val escaped = content.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", "")
-            val js = "window._nativeBridge && window._nativeBridge.onBubble(\"" + escaped + "\")"
-            webView?.evaluateJavascript(js, null)
+            val cleaned = content.replace("\".toRegex(), "")
+                .replace("\n".toRegex(), " ")
+                .replace("\r".toRegex(), "")
+            webView?.evaluateJavascript(
+                "window._nativeBridge && window._nativeBridge.onBubble("$cleaned")",
+                null
+            )
         }
     }
+
     private fun postToTable(table: String, body: JSONObject) {
         Thread {
             try {
@@ -95,6 +107,7 @@ class SupabaseSync(
             }
         }.start()
     }
+
     fun stopPolling() {
         pollTimer?.cancel()
         pollTimer = null
