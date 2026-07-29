@@ -92,13 +92,12 @@ class SupabaseSync(
 
     private fun applyUserMessage(content: String) {
         val escaped = content
-            .replace("\", "\\\\")
-            .replace(""", "\\"")
-            .replace("
-", "\\n")
-            .replace("", "")
-            .replace("	", " ")
-        val js = "javascript:window.petEngine && window.petEngine.showBubble(\"" + escaped + "\", 8000)"
+            .replace("\\", "\\\\")
+            .replace(""", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "")
+            .replace("\t", " ")
+        val js = "javascript:window.petEngine && window.petEngine.showBubble(\\\"" + escaped + "\\\", 8000)"
         Log.d(TAG, "JS eval: $js")
         android.os.Handler(context.mainLooper).post {
             webView?.evaluateJavascript(js) { result ->
