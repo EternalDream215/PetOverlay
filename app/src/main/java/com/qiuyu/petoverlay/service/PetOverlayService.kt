@@ -143,7 +143,8 @@ class PetOverlayService : Service() {
                     onAppChanged: function(pkg) { window.petEngine && window.petEngine.onAppChanged(pkg); },
                     onBubble: function(text) { window.petEngine && window.petEngine.showBubble(text); },
                     onChatMessage: function(text) { window._chatMessageToSend = text; window._chatMessageReady = true; },
-                    showChatInput: function() { window._showChatInputFlag = true; }
+                    showChatInput: function() { window._showChatInputFlag = true; },
+                    onBubbleSpeak: function(text) { window._bubbleTextToSpeak = text; window._bubbleSpeakReady = true; }
                 };
             }
         """.trimIndent(), null)
@@ -170,9 +171,18 @@ class PetOverlayService : Service() {
                         showChatInputDialog()
                     }
                 }
-                handler.postDelayed(this, 500)
+                // Check if bubble needs to be spoken
+                overlayView?.evaluateJavascript(
+                    "if (window._bubbleSpeakReady) { var t = window._bubbleTextToSpeak; window._bubbleSpeakReady = false; t; } else { ''; }"
+                ) { speakText ->
+                    val text = speakText?.removeSurrounding("\"") ?: ""
+                    if (text.isNotEmpty() && text != "null" && text != "") {
+                        supabaseSync?.synthesizeAndPlay(text)
+                    }
+                }
+                handler.postDelayed(this, 300)
             }
-        }, 500)
+        }, 300)
     }
 
     fun pushBubble(text: String) {
