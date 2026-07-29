@@ -48,7 +48,7 @@ html, body {
 
 .bubble {
     position: absolute;
-    top: 0px; left: 50%;
+    top: 20px; left: 50%;
     transform: translateX(-50%);
     background: white;
     border: 1.5px solid #5a7a3a;
@@ -82,7 +82,7 @@ html, body {
 .mood-emoji.show { opacity:1; animation:pop 0.4s ease; }
 .zzz {
     position: absolute;
-    top: 5px; right: 25px;
+    top: 15px; right: 25px;
     font-size: 14px;
     opacity: 0;
     animation: zzzFloat 2s ease-in-out infinite;
@@ -97,7 +97,7 @@ html, body {
 /* 水滴动画（喝水提醒） */
 .water-drop {
     position: absolute;
-    top: 8px; left: 50%;
+    top: 18px; left: 50%;
     font-size: 16px;
     opacity: 0;
     animation: dropFall 1.5s ease infinite;
@@ -111,15 +111,15 @@ html, body {
 }
 .chat-btn {
     position: absolute;
-    bottom: 30px; left: 2px;
+    bottom: 35px; left: 15px;
     width: 22px; height: 22px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
-    border: 1.5px solid rgba(255,255,255,0.6);
+    background: linear-gradient(135deg, #1a1a1a, #333);
+    border: 1.5px solid rgba(255,255,255,0.4);
     display: flex; align-items: center; justify-content: center;
     font-size: 11px;
     cursor: pointer;
-    box-shadow: 0 1px 4px rgba(108,92,231,0.4);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
     transition: transform 0.2s, box-shadow 0.2s;
     pointer-events: auto;
     z-index: 10;
@@ -139,7 +139,7 @@ html, body {
     <div class="mood-emoji" id="moodEmoji">🖤</div>
     <div class="zzz" id="zzz">💤</div>
     <div class="water-drop" id="waterDrop">💧</div>
-    <div class="chat-btn" id="chatBtn" onclick="window._nativeBridge && window._nativeBridge.showChatInput()">💬</div>
+    <div class="chat-btn" id="chatBtn" onclick="window._nativeBridge && window._nativeBridge.showChatInput()">🖤</div>
     <svg class="cat body" id="pet" viewBox="0 0 340 380" width="60" height="60">
         <!-- 花朵 -->
         <g opacity="0.7"><g transform="translate(55,70)"><ellipse cx="0" cy="-16" rx="13" ry="13" fill="#8dba4a"/><ellipse cx="15" cy="-4" rx="13" ry="13" fill="#8dba4a"/><ellipse cx="9" cy="12" rx="13" ry="13" fill="#8dba4a"/><ellipse cx="-9" cy="12" rx="13" ry="13" fill="#8dba4a"/><ellipse cx="-15" cy="-4" rx="13" ry="13" fill="#8dba4a"/><circle r="5.5" fill="#c8d888"/></g></g>
