@@ -2,19 +2,22 @@ package com.qiuyu.petoverlay.utils
 
 import android.os.Handler
 import android.os.Looper
+import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.webkit.WebView
 import org.json.JSONObject
 import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Locale
 import java.util.Timer
 import java.util.TimerTask
 
 class SupabaseSync(
     private val supabaseUrl: String,
     private val supabaseKey: String,
-    private val webView: WebView?
+    private val webView: WebView?,
+    private val tts: TextToSpeech?
 ) {
     private val handler = Handler(Looper.getMainLooper())
     private var pollTimer: Timer? = null
@@ -62,7 +65,6 @@ class SupabaseSync(
             conn.readTimeout = 10000
             val response = conn.inputStream.bufferedReader().readText()
             val arr = JSONArray(response)
-            Log.d(TAG, "Poll: ${arr.length()} msgs, latestId=$latestMessageId")
             if (arr.length() > 0) {
                 val msg = arr.getJSONObject(0)
                 val id = msg.getLong("id")
@@ -84,8 +86,9 @@ class SupabaseSync(
             try {
                 val escaped = content.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "")
                 val js = "window._nativeBridge && window._nativeBridge.onBubble(\"" + escaped + "\")"
-                Log.d(TAG, "JS: $js")
-                webView?.evaluateJavascript(js) { r -> Log.d(TAG, "JS result: $r") }
+                webView?.evaluateJavascript(js, null)
+                tts?.speak(content, TextToSpeech.QUEUE_FLUSH, null, "pet_msg")
+                Log.d(TAG, "Bubble + TTS: $content")
             } catch (e: Exception) {
                 Log.e(TAG, "applyUserMessage err", e)
             }
@@ -105,7 +108,6 @@ class SupabaseSync(
                 conn.doOutput = true
                 conn.outputStream.use { it.write(body.toString().toByteArray()) }
                 val code = conn.responseCode
-                Log.d(TAG, "POST $table: $code")
                 if (code != 201) {
                     val err = conn.errorStream?.bufferedReader()?.readText() ?: ""
                     Log.w(TAG, "POST $table failed: $code $err")
