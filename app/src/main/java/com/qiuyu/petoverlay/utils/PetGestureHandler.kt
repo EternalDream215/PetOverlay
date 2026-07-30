@@ -22,17 +22,9 @@ class PetGestureHandler(
     private val petW: Int,
     private val petH: Int
 ) {
-    // Use real physical screen size to ensure full-screen drag range
-    private val realScreenW: Int
-    private val realScreenH: Int
-    init {
-        val wm = context.getSystemService(android.content.Context.WINDOW_SERVICE) as WindowManager
-        val realMetrics = android.util.DisplayMetrics()
-        @Suppress("DEPRECATION")
-        wm.defaultDisplay.getRealMetrics(realMetrics)
-        realScreenW = realMetrics.widthPixels
-        realScreenH = realMetrics.heightPixels
-    }
+    // Hardcoded full drag range: 1300x2800
+    private val realScreenW: Int = 1300
+    private val realScreenH: Int = 2800
     private var initialX = 0
     private var initialY = 0
     private var initialTouchX = 0f
