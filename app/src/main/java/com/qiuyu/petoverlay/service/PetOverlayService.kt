@@ -101,7 +101,7 @@ class PetOverlayService : Service() {
             }
         }
 
-        // Get screen dimensions for boundary enforcement
+        // Use physical screen size for clamp bounds
         val wm = getSystemService(WINDOW_SERVICE) as WindowManager
         val metrics = DisplayMetrics()
         @Suppress("DEPRECATION")
