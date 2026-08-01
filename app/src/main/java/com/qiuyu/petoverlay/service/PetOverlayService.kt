@@ -90,8 +90,7 @@ class PetOverlayService : Service() {
             petW,
             petH,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
@@ -102,11 +101,13 @@ class PetOverlayService : Service() {
             }
         }
 
-        // Get physical screen dimensions for boundary enforcement
-        // Use physical resolution (1260x2750) not override (1080x2358)
-        // because FLAG_LAYOUT_NO_LIMITS shifts coordinate system
-        val screenW = 1260
-        val screenH = 2750
+        // Get screen dimensions for boundary enforcement
+        val wm = getSystemService(WINDOW_SERVICE) as WindowManager
+        val metrics = DisplayMetrics()
+        @Suppress("DEPRECATION")
+        wm.defaultDisplay.getRealMetrics(metrics)
+        val screenW = metrics.widthPixels
+        val screenH = metrics.heightPixels
 
         overlayView = WebView(this).apply {
             setBackgroundColor(0x00000000)
