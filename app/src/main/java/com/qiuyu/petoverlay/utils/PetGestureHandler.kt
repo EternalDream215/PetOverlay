@@ -157,6 +157,6 @@ class PetGestureHandler(
         )
     }
 
-    private fun clampX(x: Int): Int = max(0, min(x, realScreenW - petW))
-    private fun clampY(y: Int): Int = max(0, min(y, realScreenH - petH))
+    private fun clampX(x: Int): Int = max(-petW / 3, min(x, realScreenW - petW / 3))
+    private fun clampY(y: Int): Int = max(-petH / 3, min(y, realScreenH - petH / 3))
 }
