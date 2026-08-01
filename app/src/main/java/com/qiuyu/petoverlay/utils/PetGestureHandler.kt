@@ -97,13 +97,7 @@ class PetGestureHandler(
                     } else {
                         val velocity = sqrt((dx * dx + dy * dy).toDouble())
                         if (velocity > FLING_VELOCITY && elapsed < FLING_TIME) {
-                            // Fling: fly off screen
                             onFling(dx, dy)
-                        } else {
-                            // Just drag: clamp within screen
-                            params.x = clampX(params.x)
-                            params.y = clampY(params.y)
-                            try { windowManager.updateViewLayout(webView, params) } catch (_: Exception) {}
                         }
                     }
                     true
@@ -157,6 +151,6 @@ class PetGestureHandler(
         )
     }
 
-    private fun clampX(x: Int): Int = max(-petW, min(x, realScreenW))
-    private fun clampY(y: Int): Int = max(-petH, min(y, realScreenH))
+    private fun clampX(x: Int): Int = max(-petW / 2, min(x, realScreenW - petW / 2))
+    private fun clampY(y: Int): Int = max(-petH / 2, min(y, realScreenH - petH / 2))
 }
