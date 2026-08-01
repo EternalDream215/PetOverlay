@@ -90,7 +90,7 @@ class PetOverlayService : Service() {
             petW,
             petH,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
@@ -101,11 +101,11 @@ class PetOverlayService : Service() {
             }
         }
 
-        // Use physical screen size for clamp bounds
+        // v3.35: use getMetrics (excludes nav bar), FLAG_LAYOUT_NO_LIMITS handles full screen
         val wm = getSystemService(WINDOW_SERVICE) as WindowManager
         val metrics = DisplayMetrics()
         @Suppress("DEPRECATION")
-        wm.defaultDisplay.getRealMetrics(metrics)
+        wm.defaultDisplay.getMetrics(metrics)
         val screenW = metrics.widthPixels
         val screenH = metrics.heightPixels
 
