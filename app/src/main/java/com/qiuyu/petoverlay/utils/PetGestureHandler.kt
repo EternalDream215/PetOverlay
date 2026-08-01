@@ -62,8 +62,8 @@ class PetGestureHandler(
                     val dy = (event.rawY - initialTouchY).toInt()
                     if (abs(dx) > MOVE_THRESHOLD || abs(dy) > MOVE_THRESHOLD) {
                         hasMoved = true
-                        params.x = initialX + dx
-                        params.y = initialY + dy
+                        params.x = clampX(initialX + dx)
+                        params.y = clampY(initialY + dy)
                         try { windowManager.updateViewLayout(webView, params) } catch (_: Exception) {}
                     }
                     true
@@ -157,6 +157,6 @@ class PetGestureHandler(
         )
     }
 
-    private fun clampX(x: Int): Int = max(-petW / 2, min(x, realScreenW - petW / 2))
-    private fun clampY(y: Int): Int = max(-petH / 2, min(y, realScreenH - petH / 2))
+    private fun clampX(x: Int): Int = max(0, min(x, realScreenW - petW))
+    private fun clampY(y: Int): Int = max(0, min(y, realScreenH - petH))
 }
