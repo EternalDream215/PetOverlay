@@ -22,9 +22,9 @@ class PetGestureHandler(
     private val petW: Int,
     private val petH: Int
 ) {
-    // Hardcoded full drag range: 1300x2800
-    private val realScreenW: Int = 1300
-    private val realScreenH: Int = 2800
+    // Use override display size (1080x2358) for WindowManager.LayoutParams coordinate system
+    private val realScreenW: Int = screenW
+    private val realScreenH: Int = screenH
     private var initialX = 0
     private var initialY = 0
     private var initialTouchX = 0f
