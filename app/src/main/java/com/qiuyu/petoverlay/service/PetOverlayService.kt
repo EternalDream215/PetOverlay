@@ -102,13 +102,11 @@ class PetOverlayService : Service() {
             }
         }
 
-        // Get screen dimensions for boundary enforcement
-        val wm = getSystemService(WINDOW_SERVICE) as WindowManager
-        val metrics = DisplayMetrics()
-        @Suppress("DEPRECATION")
-        wm.defaultDisplay.getRealMetrics(metrics)
-        val screenW = metrics.widthPixels
-        val screenH = metrics.heightPixels
+        // Get physical screen dimensions for boundary enforcement
+        // Use physical resolution (1260x2750) not override (1080x2358)
+        // because FLAG_LAYOUT_NO_LIMITS shifts coordinate system
+        val screenW = 1260
+        val screenH = 2750
 
         overlayView = WebView(this).apply {
             setBackgroundColor(0x00000000)
